@@ -5,57 +5,53 @@ extensions [
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy stride-length ] ;; change to sheep-own?
+turtles-own [ energy ] ;; change to sheep-own?
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
   max-energy           ;; the maximum amount of energy any animal can have
   min-energy           ;; the minimum amount of energy an animal needs to reproduce
-  max-stride           ;; the maximum stride length, the minimum stride length is 0,
-                       ;; the stride will always be between these limits
   wolf-gain-from-food  ;; energy units wolves get for eating
   sheep-gain-from-food ;; energy units sheep get for eating
-  sheep-reproduce      ;; probability that sheep will reproduce at each time step
-  wolf-reproduce       ;; probability that wolves will reproduce at each time step
-  grass-regrowth-time  ;; number of ticks before eaten grass regrows.
+  grass-regrowth-time  ;; number of ticks before eaten grass regrows
+  breeding-frenzy-freq
+  fov-cone-angle
+  fov-cone-radius
 ]
 
-to-report state ;; a-sheep
-  ;; show map [x -> (map round (map - x [list xcor ycor] of self))] [list xcor ycor] of turtles-on neighbors
-  let T ticks mod 1000 ;; Breeding Timestep
-  let D heading
-  let P_a list xcor ycor
-  let P_s list 10 10
-  let P_w list 10 10
-  let P_g list 10 10
+;; add networks,
 
-  let sheep_in_cone sheep in-cone 3 60
-  set sheep_in_cone other sheep_in_cone
+to-report state ;; a-sheep
+  let T ticks mod breeding-frenzy-freq ;; Breeding Timestep
+  let D heading / 360.
+  let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
+  let P_s list 10 10 ;; Relative Position of Closest Sheep
+  let P_w list 10 10 ;; Relative Position of Closest Wolf
+  let P_g list 10 10 ;; Relative Position of Closest Grass
+  let P_sid list 10 10 ;; Relative Position of Closest Sheep in danger
+
+  let sheep_in_cone sheep in-cone fov-cone-radius fov-cone-angle
+  set sheep_in_cone other sheep_in_cone ;; Other sheep in cone
   let closest_sheep min-one-of sheep_in_cone [distance myself]
   if closest_sheep != nobody
      [ set P_s list ([xcor] of closest_sheep - xcor) ([ycor] of closest_sheep - ycor)]
 
-  let wolves_in_cone wolves in-cone 3 60
+  let wolves_in_cone wolves in-cone fov-cone-radius fov-cone-angle
   let closest_wolf min-one-of wolves_in_cone [distance myself]
   if closest_wolf != nobody
       [ set P_w list ([xcor] of closest_wolf - xcor) ([ycor] of closest_wolf - ycor)]
 
-  let grass_in_cone patches in-cone 3 60 with [pcolor = green]
+  let grass_in_cone patches in-cone fov-cone-radius fov-cone-angle with [pcolor = green]
   let closest_grass min-one-of grass_in_cone [distance myself]
   if closest_grass != nobody
      [ set P_g list ([pxcor] of closest_grass - xcor) ([pycor] of closest_grass - ycor)]
 
-  let P_sid list 10 10
-  let closest_sheep_in_danger nobody
   if closest_wolf != nobody and closest_sheep != nobody
     [
-      set closest_sheep_in_danger min-one-of sheep_in_cone [distance min-one-of wolves_in_cone [distance self]]
+      let closest_sheep_in_danger min-one-of sheep_in_cone [distance min-one-of wolves_in_cone [distance self]]
       set P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
-     ]
-  ;;let closest_sheep_in_danger min-one-of sheep_in_cone [closest_visible_wolf]
-  ;;let P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
-
-  report (list T D P_a P_s P_w P_g P_sid)
+    ]
+  report (sentence T D P_a P_s P_w P_g P_sid)
 end
 
 to setup
@@ -68,45 +64,45 @@ to setup
   )
 
   ;; initialize constant values
-  set max-stride 3
-  set min-energy 200
-  set max-energy 500
-  set wolf-gain-from-food 20
-  set sheep-gain-from-food 20
-  set sheep-reproduce 5 ;; percent
-  set wolf-reproduce 6 ;; percent
-  set grass-regrowth-time 138 ;; ticks (countdown of path reduced by 1 on each tick)
+  set min-energy 20
+  set max-energy 100
+  set wolf-gain-from-food 5
+  set sheep-gain-from-food 5
+  set breeding-frenzy-freq 10
+  set fov-cone-angle 30
+  set fov-cone-radius 3
+  set grass-regrowth-time 100 ;; ticks (countdown of path reduced by 1 on each tick)
 
   ;; setup the grass
   ask patches [ set pcolor green ]
   ask patches [
     set countdown random grass-regrowth-time ;; --> initialize grass grow clocks randomly <-- ??
-    if random 2 = 0  ;;half the patches start out with grass
+    if random 2 = 0  ;; half the patches start out with grass
       [ set pcolor brown ]
   ]
 
   set-default-shape sheep "sheep"
   create-sheep initial-number-sheep  ;; create the sheep, then initialize their variables
   [
+    set size 3
     set color white
-    set stride-length initial-sheep-stride
-    set size max-stride  ;; easier to see
-    set energy random max-energy
-    setxy random-xcor random-ycor
+    set energy random max-energy ;; --> random energy? <--
+    setxy round random-xcor round random-ycor
+    set heading one-of (list 0 90 180 270)
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {\"actor_net\": np.random.rand(4)}"
+      "agent_genomes[id] = {\"action_net\": np.random.rand(12, 5), \"evaluation_net\": np.random.rand(12, 1)}"
     )
   ]
 
   set-default-shape wolves "wolf"
   create-wolves initial-number-wolves  ;; create the wolves, then initialize their variables
   [
+    set size 3
     set color black
-    set stride-length initial-wolf-stride
-    set size max-stride  ;; easier to see
-    set energy random max-energy
-    setxy random-xcor random-ycor
+    set energy random max-energy ;; --> random energy? <--
+    setxy round random-xcor round random-ycor
+    set heading one-of (list 0 90 180 270)
   ]
   reset-ticks
 end
@@ -114,30 +110,23 @@ end
 to go
   if not any? turtles [ stop ]
   ask sheep [
-    move
+    move-sheep
     ;; sheep always loose 0.5 units of energy each tick
     set energy energy - 0.5
-    ;; if larger strides use more energy
-    ;; also deduct the energy for the distance moved
-    if stride-length-penalty?
-    [ set energy energy - stride-length ]
     eat-grass
     maybe-die
-    reproduce-sheep
-    if ticks mod 1000 = 0
+    if ticks mod breeding-frenzy-freq = 0
+      [ reproduce-sheep ]
+    if ticks mod breeding-frenzy-freq = 0
       [ show state ]
     ;;(py:run
     ;;  "print vars"
     ;; )
   ]
   ask wolves [
-    move
+    move-wolf
     ;; wolves always loose 0.5 units of energy each tick
     set energy energy - 0.5
-    ;; if larger strides use more energy
-    ;; also deduct the energy for the distance moved
-    if stride-length-penalty?
-    [ set energy energy - stride-length ]
     catch-sheep
     ;;maybe-die: Invincible Wolves...
     ;;reproduce-wolves
@@ -146,10 +135,31 @@ to go
   tick
 end
 
-to move  ;; turtle procedure
-  rt random-float 50
-  lt random-float 50
-  fd stride-length
+to move-wolf
+  ifelse random-float 1 < 0.5
+    [ rt 90 ] [ lt 90 ]
+  fd 1
+end
+
+to move-sheep  ;; turtle procedure
+  py:set "agent_id" who
+  py:set "agent_state" state
+  ;; show state
+  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id][\"action_net\"]).shape"
+
+  let max_val max actions
+  ;; show max_val
+  let argmax_action position max_val actions
+
+  ifelse argmax_action = 0 [ fd 1 ] [
+    ifelse argmax_action = 1 [ rt 90 ] [
+      ifelse argmax_action = 2 [ lt 90 ] [
+        ifelse argmax_action = 3 [ eat-grass ] [
+          if argmax_action = 4 []
+        ]
+      ]
+    ]
+  ]
 end
 
 to eat-grass  ;; sheep procedure
@@ -163,34 +173,25 @@ to eat-grass  ;; sheep procedure
 end
 
 to reproduce-sheep  ;; sheep procedure
-  reproduce sheep-reproduce sheep-stride-length-drift
+  reproduce
 end
 
 to reproduce-wolves  ;; wolf procedure
-  reproduce wolf-reproduce wolf-stride-length-drift
+  reproduce
 end
 
-to reproduce [reproduction-chance drift] ;; turtle procedure
-  ;; throw "dice" to see if you will reproduce
-  if random-float 100 < reproduction-chance and energy > min-energy [
-    set energy (energy / 2 )  ;; divide energy between parent and offspring
-    hatch 1 [
-      rt random-float 360
-      fd 1
-      ;; mutate the stride length based on the drift for this breed
-      set stride-length mutated-stride-length drift
-    ]
+to reproduce ;; turtle procedure
+  set energy (energy / 2 )  ;; divide energy between parent and offspring
+  py:set "parent_id" who
+  hatch 1 [
+    set heading one-of (list 0 90 180 270)
+    fd 1
+    py:set "id" who
+    (py:run
+      "agent_genomes[id] = {\"action_net\": agent_genomes[parent_id][\"action_net\"] + 0.1 * np.random.rand(12, 5),\\"
+      "\"evaluation_net\": agent_genomes[parent_id][\"evaluation_net\"] + 0.1 * np.random.rand(12, 1)}"
+    )
   ]
-end
-
-to-report mutated-stride-length [drift] ;; turtle reporter
-  let l stride-length + random-float drift - random-float drift
-  ;; keep the stride lengths within the accepted bounds
-  if l < 0
-  [ report 0 ]
-  if stride-length > max-stride
-  [ report max-stride ]
-  report l
 end
 
 to catch-sheep  ;; wolf procedure
@@ -235,8 +236,8 @@ GRAPHICS-WINDOW
 1
 1
 0
-1
-1
+0
+0
 1
 -30
 30
@@ -394,7 +395,7 @@ initial-sheep-stride
 initial-sheep-stride
 0
 1
-0.2
+1.0
 0.1
 1
 NIL
@@ -424,66 +425,11 @@ sheep-stride-length-drift
 sheep-stride-length-drift
 0
 1
-0.2
+0.0
 0.01
 1
 NIL
 HORIZONTAL
-
-PLOT
-34
-469
-370
-612
-stride length
-time
-stride
-0.0
-100.0
-0.0
-1.0
-true
-true
-"" ""
-PENS
-"wolves" 1.0 0 -2674135 true "" "if any? wolves\n[ plot mean [stride-length] of wolves ]"
-"sheep" 1.0 0 -13345367 true "" "if any? sheep\n[ plot mean [stride-length] of sheep ]"
-
-PLOT
-634
-419
-896
-612
-wolf stride histogram
-stride
-number
-0.0
-3.0
-0.0
-10.0
-true
-false
-"set-histogram-num-bars 20" "histogram [ stride-length ] of wolves    ;; using the default plot pen"
-PENS
-"default" 1.0 1 -2674135 true "" ""
-
-PLOT
-371
-419
-633
-612
-sheep stride histogram
-stride
-number
-0.0
-3.0
-0.0
-10.0
-true
-false
-"set-histogram-num-bars 20" "histogram [ stride-length ] of sheep     ;; using the default plot pen"
-PENS
-"default" 1.0 1 -13345367 true "" ""
 
 SWITCH
 111
@@ -492,31 +438,9 @@ SWITCH
 207
 stride-length-penalty?
 stride-length-penalty?
-1
+0
 1
 -1000
-
-MONITOR
-34
-418
-139
-463
-avg. wolf stride
-mean [stride-length] of wolves
-2
-1
-11
-
-MONITOR
-265
-419
-370
-464
-avg. sheep stride
-mean [stride-length] of sheep
-2
-1
-11
 
 SLIDER
 202
@@ -527,7 +451,7 @@ wolf-stride-length-drift
 wolf-stride-length-drift
 0
 1
-0.19
+0.0
 0.01
 1
 NIL
