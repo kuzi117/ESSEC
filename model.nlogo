@@ -13,7 +13,7 @@ globals [
   min-energy           ;; the minimum amount of energy an animal needs to reproduce
   wolf-gain-from-food  ;; energy units wolves get for eating
   sheep-gain-from-food ;; energy units sheep get for eating
-  grass-regrowth-time  ;; number of ticks before eaten grass regrows
+;;  grass-regrowth-time  ;; number of ticks before eaten grass regrows
   breeding-frenzy-freq
   fov-cone-angle
   fov-cone-radius
@@ -46,11 +46,11 @@ to-report state ;; a-sheep
   if closest_grass != nobody
      [ set P_g list ([pxcor] of closest_grass - xcor) ([pycor] of closest_grass - ycor)]
 
-  if closest_wolf != nobody and closest_sheep != nobody
-    [
-      let closest_sheep_in_danger min-one-of sheep_in_cone [distance min-one-of wolves_in_cone [distance self]]
-      set P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
-    ]
+;;  if closest_wolf != nobody and closest_sheep != nobody
+;;    [
+;;      let closest_sheep_in_danger min-one-of sheep_in_cone [distance min-one-of wolves_in_cone [distance self]]
+;;      set P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
+;;    ]
   report (sentence T D P_a P_s P_w P_g P_sid)
 end
 
@@ -71,7 +71,7 @@ to setup
   set breeding-frenzy-freq 10
   set fov-cone-angle 30
   set fov-cone-radius 3
-  set grass-regrowth-time 100 ;; ticks (countdown of path reduced by 1 on each tick)
+;;  set grass-regrowth-time 100 ;; ticks (countdown of path reduced by 1 on each tick)
 
   ;; setup the grass
   ask patches [ set pcolor green ]
@@ -91,7 +91,8 @@ to setup
     set heading one-of (list 0 90 180 270)
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {\"action_net\": np.random.rand(12, 5), \"evaluation_net\": np.random.rand(12, 1)}"
+      "agent_genomes[id] = {'action_net': np.random.rand(12, 5), 'evaluation_net': np.random.rand(12, 1), 'preference_net': np.random.rand(72, 1)}"
+      "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
     )
   ]
 
@@ -117,8 +118,8 @@ to go
     maybe-die
     if ticks mod breeding-frenzy-freq = 0
       [ reproduce-sheep ]
-    if ticks mod breeding-frenzy-freq = 0
-      [ show state ]
+;;    if ticks mod breeding-frenzy-freq = 0
+;;      [ show state ]
     ;;(py:run
     ;;  "print vars"
     ;; )
@@ -145,7 +146,7 @@ to move-sheep  ;; turtle procedure
   py:set "agent_id" who
   py:set "agent_state" state
   ;; show state
-  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id][\"action_net\"]).shape"
+  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
 
   let max_val max actions
   ;; show max_val
@@ -155,7 +156,7 @@ to move-sheep  ;; turtle procedure
     ifelse argmax_action = 1 [ rt 90 ] [
       ifelse argmax_action = 2 [ lt 90 ] [
         ifelse argmax_action = 3 [ eat-grass ] [
-          if argmax_action = 4 []
+          if argmax_action = 4 [ reproduce ]
         ]
       ]
     ]
@@ -181,15 +182,19 @@ to reproduce-wolves  ;; wolf procedure
 end
 
 to reproduce ;; turtle procedure
-  set energy (energy / 2 )  ;; divide energy between parent and offspring
+  set energy (energy - min-reproduce-energy)
   py:set "parent_id" who
+  ;; pick a partner
+
+
   hatch 1 [
     set heading one-of (list 0 90 180 270)
+    set energy min-reproduce-energy
     fd 1
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {\"action_net\": agent_genomes[parent_id][\"action_net\"] + 0.1 * np.random.rand(12, 5),\\"
-      "\"evaluation_net\": agent_genomes[parent_id][\"evaluation_net\"] + 0.1 * np.random.rand(12, 1)}"
+      "agent_genomes[id] = {'action_net': agent_genomes[parent_id]['action_net'] + 0.1 * np.random.rand(12, 5),\\"
+      "'evaluation_net': agent_genomes[parent_id]['evaluation_net'] + 0.1 * np.random.rand(12, 1)}"
     )
   ]
 end
@@ -205,7 +210,13 @@ end
 
 to maybe-die  ;; turtle procedure
   ;; when energy dips below zero, die
-  if energy < 0 [ die ]
+  if energy < 0 [
+    die
+    py:set "dead_sheep" who
+    (py:run
+      "del agent_genomes[dead_sheep]"
+    )
+  ]
 end
 
 to grow-grass  ;; patch procedure
@@ -258,7 +269,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-64.0
+20.0
 1
 1
 NIL
@@ -273,7 +284,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-64.0
+100.0
 1
 1
 NIL
@@ -453,6 +464,36 @@ wolf-stride-length-drift
 1
 0.0
 0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+260
+498
+453
+531
+grass-regrowth-time
+grass-regrowth-time
+0
+1000
+500.0
+100
+1
+NIL
+HORIZONTAL
+
+SLIDER
+624
+513
+821
+546
+min-reproduce-energy
+min-reproduce-energy
+0
+100
+5.0
+5
 1
 NIL
 HORIZONTAL
