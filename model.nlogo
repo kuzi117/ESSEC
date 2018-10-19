@@ -23,6 +23,7 @@ globals [
 
 to-report state ;; a-sheep
   let T ticks mod breeding-frenzy-freq ;; Breeding Timestep
+  let enrg energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
   let P_s list 10 10 ;; Relative Position of Closest Sheep
@@ -51,7 +52,7 @@ to-report state ;; a-sheep
 ;;      let closest_sheep_in_danger min-one-of sheep_in_cone [distance min-one-of wolves_in_cone [distance self]]
 ;;      set P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
 ;;    ]
-  report (sentence T D P_a P_s P_w P_g P_sid)
+  report (sentence T D enrg P_a P_s P_w P_g) ;;P_sid)
 end
 
 to setup
@@ -91,7 +92,7 @@ to setup
     set heading one-of (list 0 90 180 270)
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {'action_net': np.random.rand(12, 5), 'evaluation_net': np.random.rand(12, 1), 'preference_net': np.random.rand(72, 1)}"
+      "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
       "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
     )
   ]
@@ -146,7 +147,7 @@ to move-sheep  ;; turtle procedure
   py:set "agent_id" who
   py:set "agent_state" state
   ;; show state
-  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
+  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 11)), agent_genomes[agent_id]['action_net']).flat"
 
   let max_val max actions
   ;; show max_val
@@ -193,8 +194,9 @@ to reproduce ;; turtle procedure
     fd 1
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {'action_net': agent_genomes[parent_id]['action_net'] + 0.1 * np.random.rand(12, 5),\\"
-      "'evaluation_net': agent_genomes[parent_id]['evaluation_net'] + 0.1 * np.random.rand(12, 1)}"
+      "agent_genomes[id] = {'action_net': agent_genomes[parent_id]['action_net'] + 0.1 * np.random.rand(11, 5),\\"
+      "'evaluation_net': agent_genomes[parent_id]['evaluation_net'] + 0.1 * np.random.rand(11, 1),\\"
+      "'preference_net': agent_genomes[parent_id]['preference_net'] + 0.1 * np.random.rand(66, 1)}"
     )
   ]
 end
@@ -477,7 +479,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 1000
-500.0
+100.0
 100
 1
 NIL
