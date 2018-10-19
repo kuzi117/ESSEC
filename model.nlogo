@@ -52,6 +52,7 @@ to-report state ;; a-sheep
 ;;      let closest_sheep_in_danger min-one-of sheep_in_cone [distance min-one-of wolves_in_cone [distance self]]
 ;;      set P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
 ;;    ]
+
   report (sentence T D enrg P_a P_s P_w P_g) ;;P_sid)
 end
 
@@ -62,6 +63,8 @@ to setup
   (py:run
     "import numpy as np"
     "agent_genomes = {}"
+    "agent_preferences = {}"
+    "get_preference = lambda self, other: np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, agent_genomes[other]['initial_action_net'].flat)).flat, agent_genomes[self]['preference_net'])"
   )
 
   ;; initialize constant values
@@ -94,6 +97,8 @@ to setup
     (py:run
       "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
       "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+      "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+      "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
     )
   ]
 
@@ -117,8 +122,8 @@ to go
     set energy energy - 0.5
     eat-grass
     maybe-die
-    if ticks mod breeding-frenzy-freq = 0
-      [ reproduce-sheep ]
+;;    if ticks mod breeding-frenzy-freq = 0
+;;      [ reproduce-sheep ]
 ;;    if ticks mod breeding-frenzy-freq = 0
 ;;      [ show state ]
     ;;(py:run
@@ -183,21 +188,27 @@ to reproduce-wolves  ;; wolf procedure
 end
 
 to reproduce ;; turtle procedure
-  set energy (energy - min-reproduce-energy)
-  py:set "parent_id" who
-  ;; pick a partner
+  if energy > min-reproduce-energy [
 
 
-  hatch 1 [
-    set heading one-of (list 0 90 180 270)
-    set energy min-reproduce-energy
-    fd 1
-    py:set "id" who
-    (py:run
-      "agent_genomes[id] = {'action_net': agent_genomes[parent_id]['action_net'] + 0.1 * np.random.rand(11, 5),\\"
-      "'evaluation_net': agent_genomes[parent_id]['evaluation_net'] + 0.1 * np.random.rand(11, 1),\\"
-      "'preference_net': agent_genomes[parent_id]['preference_net'] + 0.1 * np.random.rand(66, 1)}"
-    )
+    if true [
+      set energy (energy - min-reproduce-energy)
+      py:set "parent_id" who
+      ;; pick a partner
+
+
+      hatch 1 [
+        set heading one-of (list 0 90 180 270)
+        set energy min-reproduce-energy
+        fd 1
+        py:set "id" who
+        (py:run
+          "agent_genomes[id] = {'action_net': agent_genomes[parent_id]['action_net'] + 0.1 * np.random.rand(11, 5),\\"
+          "'evaluation_net': agent_genomes[parent_id]['evaluation_net'] + 0.1 * np.random.rand(11, 1),\\"
+          "'preference_net': agent_genomes[parent_id]['preference_net'] + 0.1 * np.random.rand(66, 1)}"
+        )
+      ]
+    ]
   ]
 end
 
@@ -494,7 +505,7 @@ min-reproduce-energy
 min-reproduce-energy
 0
 100
-5.0
+25.0
 5
 1
 NIL
