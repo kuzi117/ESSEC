@@ -14,7 +14,7 @@ globals [
 ;; add networks,
 
 to-report state ;; a-sheep
-  let T ticks mod breeding-frenzy-freq ;; Breeding Timestep
+  let T ticks
   let enrg energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
@@ -116,7 +116,7 @@ to go
   ask sheep [
     move-sheep
     ;; sheep always loose 0.5 units of energy each tick
-    set energy energy - 0.5
+    set energy energy - sheep-energy-loss
     eat-grass
     maybe-die
 ;;    if ticks mod breeding-frenzy-freq = 0
@@ -217,10 +217,10 @@ end
 
 to catch-sheep  ;; wolf procedure
   let prey one-of sheep-here
-  if prey != nobody
-  [ ask prey [ die ]
-    set energy energy + wolf-gain-from-food
-    if energy > max-energy [set energy max-energy]
+  if prey != nobody [
+    ask prey [
+      set energy (energy - attack-damage)
+    ]
   ]
 end
 
@@ -246,9 +246,9 @@ to grow-grass  ;; patch procedure
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-344
+201
 10
-718
+575
 385
 -1
 -1
@@ -273,25 +273,25 @@ ticks
 30.0
 
 SLIDER
-6
-14
-178
-47
+25
+56
+197
+89
 initial-number-sheep
 initial-number-sheep
 0
 250
-250.0
+50.0
 5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-6
-61
-177
-94
+25
+376
+196
+409
 initial-number-wolves
 initial-number-wolves
 0
@@ -303,10 +303,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-424
-387
-493
-420
+277
+533
+346
+566
 reset
 setup
 NIL
@@ -320,10 +320,10 @@ NIL
 1
 
 BUTTON
+419
+533
+488
 566
-387
-635
-420
 loop
 go
 T
@@ -337,10 +337,10 @@ NIL
 0
 
 PLOT
-6
-151
-342
-294
+222
+387
+558
+530
 populations
 time
 pop.
@@ -357,9 +357,9 @@ PENS
 "grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
-181
+25
 10
-259
+103
 55
 sheep
 count sheep
@@ -368,10 +368,10 @@ count sheep
 11
 
 MONITOR
-181
-57
-259
-102
+25
+329
+103
+374
 wolves
 count wolves
 3
@@ -379,10 +379,10 @@ count wolves
 11
 
 MONITOR
-181
-104
-259
-149
+25
+446
+103
+491
 grass / 4
 count patches with [ pcolor = green ] / 4
 0
@@ -390,40 +390,40 @@ count patches with [ pcolor = green ] / 4
 11
 
 SLIDER
-6
-107
-177
-140
+25
+492
+196
+525
 grass-regrowth-time
 grass-regrowth-time
 0
 1000
-100.0
+250.0
 50
 1
 NIL
 HORIZONTAL
 
 SLIDER
-6
-297
-178
-330
+25
+226
+197
+259
 min-reproduce-energy
 min-reproduce-energy
 0
 100
-5.0
+20.0
 5
 1
 NIL
 HORIZONTAL
 
 BUTTON
-495
-387
-564
-420
+348
+533
+417
+566
 step
 go
 NIL
@@ -437,10 +437,10 @@ NIL
 1
 
 SLIDER
-6
-331
-178
-364
+25
+260
+197
+293
 fov-cone-angle
 fov-cone-angle
 0
@@ -452,10 +452,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-365
-178
-398
+25
+294
+197
+327
 fov-cone-radius
 fov-cone-radius
 0
@@ -467,12 +467,57 @@ NIL
 HORIZONTAL
 
 SLIDER
-255
-483
-451
-516
+25
+90
+197
+123
 sheep-gain-from-food
 sheep-gain-from-food
+0
+100
+25.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+25
+191
+197
+224
+max-energy
+max-energy
+0
+100
+50.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+25
+157
+197
+190
+min-energy
+min-energy
+0
+100
+20.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+25
+410
+197
+443
+attack-damage
+attack-damage
 0
 100
 5.0
@@ -482,31 +527,16 @@ NIL
 HORIZONTAL
 
 SLIDER
-597
-462
-769
-495
-max-energy
-max-energy
+25
+123
+197
+156
+sheep-energy-loss
+sheep-energy-loss
 0
-100
-100.0
 5
-1
-NIL
-HORIZONTAL
-
-SLIDER
-541
-549
-713
-582
-min-energy
-min-energy
-0
-100
-20.0
-5
+1.0
+0.25
 1
 NIL
 HORIZONTAL
