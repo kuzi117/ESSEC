@@ -5,18 +5,10 @@ extensions [
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy ] ;; change to sheep-own?
+turtles-own [ energy last_id_of_preferred_sheep_in_cone ] ;; change to sheep-own?
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
-  max-energy           ;; the maximum amount of energy any animal can have
-  min-energy           ;; the minimum amount of energy an animal needs to reproduce
-  wolf-gain-from-food  ;; energy units wolves get for eating
-  sheep-gain-from-food ;; energy units sheep get for eating
-;;  grass-regrowth-time  ;; number of ticks before eaten grass regrows
-  breeding-frenzy-freq
-  fov-cone-angle
-  fov-cone-radius
 ]
 
 ;; add networks,
@@ -53,7 +45,22 @@ to-report state ;; a-sheep
 ;;      set P_sid list ([xcor] of closest_sheep_in_danger - xcor) ([ycor] of closest_sheep_in_danger - ycor)
 ;;    ]
 
-  report (sentence T D enrg P_a P_s P_w P_g) ;;P_sid)
+  set last_id_of_preferred_sheep_in_cone -1
+  let max_pref -1
+
+  if closest_sheep != nobody [
+    let sheep_ids [who] of sheep_in_cone
+    py:set "sheep_ids_in_cone" sheep_ids
+    py:set "this_id" who
+    (py:run
+      "prefs_info = [(key, agent_preferences[this_id][key]) for key in sheep_ids_in_cone]"
+      "max_pref = max([item[1] for item in prefs_info])"
+    )
+    set max_pref py:runresult "max_pref"
+    set last_id_of_preferred_sheep_in_cone py:runresult "prefs_info[np.random.choice(np.flatnonzero(np.array([item[1] for item in prefs_info]) == max_pref))][0]"
+  ]
+
+  report (sentence T D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
 end
 
 to setup
@@ -64,18 +71,8 @@ to setup
     "import numpy as np"
     "agent_genomes = {}"
     "agent_preferences = {}"
-    "get_preference = lambda self, other: np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, agent_genomes[other]['initial_action_net'].flat)).flat, agent_genomes[self]['preference_net'])"
+    "get_preference = lambda self, other: np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, agent_genomes[other]['initial_action_net'].flat)).flat, agent_genomes[self]['preference_net'])[0]"
   )
-
-  ;; initialize constant values
-  set min-energy 20
-  set max-energy 100
-  set wolf-gain-from-food 5
-  set sheep-gain-from-food 5
-  set breeding-frenzy-freq 10
-  set fov-cone-angle 30
-  set fov-cone-radius 3
-;;  set grass-regrowth-time 100 ;; ticks (countdown of path reduced by 1 on each tick)
 
   ;; setup the grass
   ask patches [ set pcolor green ]
@@ -95,7 +92,7 @@ to setup
     set heading one-of (list 0 90 180 270)
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
+      "agent_genomes[id] = {'action_net': np.random.rand(12, 5), 'evaluation_net': np.random.rand(12, 1), 'preference_net': np.random.rand(72, 1)}"
       "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
       "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
       "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
@@ -152,7 +149,7 @@ to move-sheep  ;; turtle procedure
   py:set "agent_id" who
   py:set "agent_state" state
   ;; show state
-  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 11)), agent_genomes[agent_id]['action_net']).flat"
+  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
 
   let max_val max actions
   ;; show max_val
@@ -189,23 +186,29 @@ end
 
 to reproduce ;; turtle procedure
   if energy > min-reproduce-energy [
-
-
-    if true [
+    if last_id_of_preferred_sheep_in_cone != -1 [
       set energy (energy - min-reproduce-energy)
       py:set "parent_id" who
       ;; pick a partner
-
-
+      py:set "partner_id" last_id_of_preferred_sheep_in_cone
       hatch 1 [
         set heading one-of (list 0 90 180 270)
         set energy min-reproduce-energy
         fd 1
         py:set "id" who
         (py:run
-          "agent_genomes[id] = {'action_net': agent_genomes[parent_id]['action_net'] + 0.1 * np.random.rand(11, 5),\\"
-          "'evaluation_net': agent_genomes[parent_id]['evaluation_net'] + 0.1 * np.random.rand(11, 1),\\"
-          "'preference_net': agent_genomes[parent_id]['preference_net'] + 0.1 * np.random.rand(66, 1)}"
+          "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['action_net'] + 0.5 *  agent_genomes[partner_id]['action_net'] + \\"
+          "0.1 * np.random.rand(12, 5),\\"
+
+          "'evaluation_net': 0.5 * agent_genomes[parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + \\"
+          "0.1 * np.random.rand(12, 1),\\"
+
+          "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
+          "0.1 * np.random.rand(72, 1)}"
+
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
         )
       ]
     ]
@@ -241,16 +244,12 @@ to grow-grass  ;; patch procedure
       [ set countdown countdown - 1 ]
   ]
 end
-
-
-; Copyright 2006 Uri Wilensky.
-; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
-430
-12
-804
-387
+344
+10
+718
+385
 -1
 -1
 6.0
@@ -274,41 +273,41 @@ ticks
 30.0
 
 SLIDER
-20
-31
-201
-64
+6
+14
+178
+47
 initial-number-sheep
 initial-number-sheep
 0
 250
-20.0
-1
+250.0
+5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-202
-31
-382
-64
+6
+61
+177
+94
 initial-number-wolves
 initial-number-wolves
 0
 250
 100.0
-1
+5
 1
 NIL
 HORIZONTAL
 
 BUTTON
-132
-101
-201
-134
-setup
+424
+387
+493
+420
+reset
 setup
 NIL
 1
@@ -321,11 +320,11 @@ NIL
 1
 
 BUTTON
-202
-101
-271
-134
-go
+566
+387
+635
+420
+loop
 go
 T
 1
@@ -338,10 +337,10 @@ NIL
 0
 
 PLOT
-33
-265
-369
-408
+6
+151
+342
+294
 populations
 time
 pop.
@@ -358,10 +357,10 @@ PENS
 "grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
-74
-214
-152
+181
+10
 259
+55
 sheep
 count sheep
 3
@@ -369,10 +368,10 @@ count sheep
 11
 
 MONITOR
-153
-214
-231
+181
+57
 259
+102
 wolves
 count wolves
 3
@@ -380,132 +379,133 @@ count wolves
 11
 
 MONITOR
-232
-214
-310
+181
+104
 259
+149
 grass / 4
 count patches with [ pcolor = green ] / 4
 0
 1
 11
 
-TEXTBOX
-28
-11
-168
-30
-Sheep settings
-11
-0.0
-0
-
-TEXTBOX
-203
-11
-316
-29
-Wolf settings
-11
-0.0
-0
-
 SLIDER
-20
-65
-201
-98
-initial-sheep-stride
-initial-sheep-stride
-0
-1
-1.0
-0.1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-202
-65
-383
-98
-initial-wolf-stride
-initial-wolf-stride
-0
-1
-1.0
-0.1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-8
-137
-201
-170
-sheep-stride-length-drift
-sheep-stride-length-drift
-0
-1
-0.0
-0.01
-1
-NIL
-HORIZONTAL
-
-SWITCH
-111
-174
-307
-207
-stride-length-penalty?
-stride-length-penalty?
-0
-1
--1000
-
-SLIDER
-202
-137
-395
-170
-wolf-stride-length-drift
-wolf-stride-length-drift
-0
-1
-0.0
-0.01
-1
-NIL
-HORIZONTAL
-
-SLIDER
-260
-498
-453
-531
+6
+107
+177
+140
 grass-regrowth-time
 grass-regrowth-time
 0
 1000
 100.0
-100
+50
 1
 NIL
 HORIZONTAL
 
 SLIDER
-624
-513
-821
-546
+6
+297
+178
+330
 min-reproduce-energy
 min-reproduce-energy
 0
 100
-25.0
+5.0
+5
+1
+NIL
+HORIZONTAL
+
+BUTTON
+495
+387
+564
+420
+step
+go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+6
+331
+178
+364
+fov-cone-angle
+fov-cone-angle
+0
+360
+360.0
+15
+1
+NIL
+HORIZONTAL
+
+SLIDER
+6
+365
+178
+398
+fov-cone-radius
+fov-cone-radius
+0
+60
+15.0
+3
+1
+NIL
+HORIZONTAL
+
+SLIDER
+255
+483
+451
+516
+sheep-gain-from-food
+sheep-gain-from-food
+0
+100
+5.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+597
+462
+769
+495
+max-energy
+max-energy
+0
+100
+100.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+541
+549
+713
+582
+min-energy
+min-energy
+0
+100
+20.0
 5
 1
 NIL
