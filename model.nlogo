@@ -14,7 +14,7 @@ globals [
 ;; add networks,
 
 to-report state ;; a-sheep
-  let T ticks
+  ;; let T ticks
   let enrg energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
@@ -60,7 +60,7 @@ to-report state ;; a-sheep
     set last_id_of_preferred_sheep_in_cone py:runresult "prefs_info[np.random.choice(np.flatnonzero(np.array([item[1] for item in prefs_info]) == max_pref))][0]"
   ]
 
-  report (sentence T D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
+  report (sentence D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
 end
 
 to setup
@@ -82,7 +82,7 @@ to setup
       [ set pcolor brown ]
   ]
 
-  set-default-shape sheep "sheep"
+  set-default-shape sheep "arrow"
   create-sheep initial-number-sheep  ;; create the sheep, then initialize their variables
   [
     set size 3
@@ -93,14 +93,14 @@ to setup
     set last_state []
     py:set "id" who
     (py:run
-      "agent_genomes[id] = {'action_net': np.random.rand(12, 5), 'evaluation_net': np.random.rand(12, 1), 'preference_net': np.random.rand(72, 1)}"
+      "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
       "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
       "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
       "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
     )
   ]
 
-  set-default-shape wolves "wolf"
+  set-default-shape wolves "arrow"
   create-wolves initial-number-wolves  ;; create the wolves, then initialize their variables
   [
     set size 3
@@ -113,7 +113,7 @@ to setup
 end
 
 to go
-  if not any? turtles [ stop ]
+  if not any? sheep [ stop ]
   ask sheep [
     move-sheep
     ;; sheep always loose 0.5 units of energy each tick
@@ -151,24 +151,24 @@ to update-action-net
   if not empty? last_state [
     py:set "agent_last_state" last_state
     py:set "agent_state" state
-    let value_last_state py:runresult "np.dot(np.array(agent_last_state).reshape((1, 12)), agent_genomes[agent_id]['evaluation_net']).flat"
-    let value_state py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['evaluation_net']).flat"
+    let value_last_state py:runresult "np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['evaluation_net']).flat"
+    let value_state py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['evaluation_net']).flat"
 
     let td_error value_state - value_last_state
 
-    let q_values_last_state py:runresult "np.dot(np.array(agent_last_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
-    let q_values_state py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
+    let q_values_last_state py:runresult "np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['action_net']).flat"
+    let q_values_state py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['action_net']).flat"
 
     let max_q_val max q_values_state
     let q_val_last_state_action item last_action q_values_last_state
     ;; L = ((r + gamma * max_a' Q(s', a')) - Q(s, a))**2
     let err (td_error + 0.99 *  max_q_val - q_val_last_state_action)
 
-    py:set "grad" 2 * err * last_state
+    py:set "grad" err * last_state
     py:set "last_action" last_action
-    py:set "alpha" 0.1
+    py:set "alpha" alpha
     (py:run
-      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] -  alpha * grad"
+      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * grad"
     )
   ]
 end
@@ -177,23 +177,28 @@ to move-sheep  ;; sheep procedure
   py:set "agent_id" who
   py:set "agent_state" state
   ;; show state
-  let actions py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
+  let actions py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['action_net']).flat"
 
   let max_val max actions
   ;; show max_val
   let argmax_action position max_val actions
 
-  ifelse argmax_action = 0 [ fd 1 ] [
-    ifelse argmax_action = 1 [ rt 90 ] [
-      ifelse argmax_action = 2 [ lt 90 ] [
-        ifelse argmax_action = 3 [ eat-grass ] [
-          if argmax_action = 4 [ reproduce ]
+  let action argmax_action
+  if random-float 1 < epsilon [
+    set action random (length actions)
+  ]
+
+    ifelse action = 0 [ fd 1 ] [
+      ifelse action = 1 [ rt 90 ] [
+        ifelse action = 2 [ lt 90 ] [
+          ifelse action = 3 [ eat-grass ] [
+            if action = 4 [ reproduce ]
+          ]
         ]
       ]
     ]
 
-    set last_action argmax_action
-  ]
+    set last_action action
 end
 
 to eat-grass  ;; sheep procedure
@@ -215,26 +220,26 @@ to reproduce-wolves  ;; wolf procedure
 end
 
 to reproduce ;; turtle procedure
-  if energy > min-reproduce-energy [
+  if energy > min-energy [
     if last_id_of_preferred_sheep_in_cone != -1 [
-      set energy (energy - min-reproduce-energy)
+      set energy (energy - reproduce-energy)
       py:set "parent_id" who
       ;; pick a partner
       py:set "partner_id" last_id_of_preferred_sheep_in_cone
       hatch 1 [
         set heading one-of (list 0 90 180 270)
-        set energy min-reproduce-energy
+        set energy reproduce-energy
         fd 1
         py:set "id" who
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['action_net'] + 0.5 *  agent_genomes[partner_id]['action_net'] + \\"
-          "0.1 * np.random.rand(12, 5),\\"
+          "0.1 * np.random.rand(11, 5),\\"
 
           "'evaluation_net': 0.5 * agent_genomes[parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + \\"
-          "0.1 * np.random.rand(12, 1),\\"
+          "0.1 * np.random.rand(11, 1),\\"
 
           "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
-          "0.1 * np.random.rand(72, 1)}"
+          "0.1 * np.random.rand(66, 1)}"
 
           "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -312,22 +317,22 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-50.0
-5
+30.0
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-25
-376
-196
-409
+26
+454
+197
+487
 initial-number-wolves
 initial-number-wolves
 0
 250
-100.0
+50.0
 5
 1
 NIL
@@ -399,10 +404,10 @@ count sheep
 11
 
 MONITOR
-25
-329
-103
-374
+26
+407
+104
+452
 wolves
 count wolves
 3
@@ -410,10 +415,10 @@ count wolves
 11
 
 MONITOR
-25
-446
-103
-491
+26
+524
+104
+569
 grass / 4
 count patches with [ pcolor = green ] / 4
 0
@@ -421,15 +426,15 @@ count patches with [ pcolor = green ] / 4
 11
 
 SLIDER
-25
-492
-196
-525
+26
+570
+197
+603
 grass-regrowth-time
 grass-regrowth-time
 0
 1000
-250.0
+100.0
 50
 1
 NIL
@@ -440,11 +445,11 @@ SLIDER
 226
 197
 259
-min-reproduce-energy
-min-reproduce-energy
+reproduce-energy
+reproduce-energy
 0
 100
-20.0
+10.0
 5
 1
 NIL
@@ -521,7 +526,7 @@ max-energy
 max-energy
 0
 100
-50.0
+100.0
 5
 1
 NIL
@@ -536,22 +541,22 @@ min-energy
 min-energy
 0
 100
-20.0
+40.0
 5
 1
 NIL
 HORIZONTAL
 
 SLIDER
-25
-410
-197
-443
+26
+487
+198
+520
 attack-damage
 attack-damage
 0
 100
-5.0
+25.0
 5
 1
 NIL
@@ -568,6 +573,36 @@ sheep-energy-loss
 5
 1.0
 0.25
+1
+NIL
+HORIZONTAL
+
+SLIDER
+26
+330
+200
+364
+alpha
+alpha
+0
+1
+0.5
+0.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+26
+365
+200
+399
+epsilon
+epsilon
+0
+1
+0.1
+0.01
 1
 NIL
 HORIZONTAL
