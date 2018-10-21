@@ -5,7 +5,7 @@ extensions [
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy last_id_of_preferred_sheep_in_cone ] ;; change to sheep-own?
+turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action ] ;; change to sheep-own?
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
@@ -90,6 +90,7 @@ to setup
     set energy random max-energy ;; --> random energy? <--
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
+    set last_state []
     py:set "id" who
     (py:run
       "agent_genomes[id] = {'action_net': np.random.rand(12, 5), 'evaluation_net': np.random.rand(12, 1), 'preference_net': np.random.rand(72, 1)}"
@@ -119,6 +120,7 @@ to go
     set energy energy - sheep-energy-loss
     eat-grass
     maybe-die
+    update-action-net
 ;;    if ticks mod breeding-frenzy-freq = 0
 ;;      [ reproduce-sheep ]
 ;;    if ticks mod breeding-frenzy-freq = 0
@@ -145,7 +147,33 @@ to move-wolf
   fd 1
 end
 
-to move-sheep  ;; turtle procedure
+to update-action-net
+  if not empty? last_state [
+    py:set "agent_last_state" last_state
+    py:set "agent_state" state
+    let value_last_state py:runresult "np.dot(np.array(agent_last_state).reshape((1, 12)), agent_genomes[agent_id]['evaluation_net']).flat"
+    let value_state py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['evaluation_net']).flat"
+
+    let td_error value_state - value_last_state
+
+    let q_values_last_state py:runresult "np.dot(np.array(agent_last_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
+    let q_values_state py:runresult "np.dot(np.array(agent_state).reshape((1, 12)), agent_genomes[agent_id]['action_net']).flat"
+
+    let max_q_val max q_values_state
+    let q_val_last_state_action item last_action q_values_last_state
+    ;; L = ((r + gamma * max_a' Q(s', a')) - Q(s, a))**2
+    let err (td_error + 0.99 *  max_q_val - q_val_last_state_action)
+
+    py:set "grad" 2 * err * last_state
+    py:set "last_action" last_action
+    py:set "alpha" 0.1
+    (py:run
+      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] -  alpha * grad"
+    )
+  ]
+end
+
+to move-sheep  ;; sheep procedure
   py:set "agent_id" who
   py:set "agent_state" state
   ;; show state
@@ -163,6 +191,8 @@ to move-sheep  ;; turtle procedure
         ]
       ]
     ]
+
+    set last_action argmax_action
   ]
 end
 
@@ -231,6 +261,7 @@ to maybe-die  ;; turtle procedure
     py:set "dead_sheep" who
     (py:run
       "del agent_genomes[dead_sheep]"
+      "del agent_preferences[dead_sheep]"
     )
   ]
 end
