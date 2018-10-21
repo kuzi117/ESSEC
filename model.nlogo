@@ -176,32 +176,39 @@ to move-wolf
   ]
   ;; Seen a sheep move towards it on a cardinal direction.
   [
-    ;; Get the difference between our position and theirs.
-    let xDiff [xcor] of closest_sheep - xcor
-    let yDiff [ycor] of closest_sheep - ycor
+    ;; If we're not on a sheep then we need to change heading and move.
+    let dist_to distance closest_sheep
 
-    ;; If the x diff is non-zero and greater than the y diff, we should
-    ;; move in the x axis. Choose direction based on sign. Note that we
-    ;; choose >= here and later use only > for yDiff. This is tie
-    ;; breaking. Prefer to move on xAxis.
-    if xDiff != 0 and abs xDiff >= abs yDiff
+    if dist_to > 0
     [
-      ifelse xDiff > 0
-      [set heading 90]
-      [set heading -90]
-    ]
+      ;; towards returns [0, 360)
+      let angle_to towards closest_sheep
 
-    ;; If the y diff is non-zero...
-    if yDiff != 0 and abs yDiff > abs xDiff
-    [
-      ifelse yDiff > 0
+      ;; We're going to cut the range [0, 360] into quadrants divided at
+      ;; 45 degree points such that we clamp the heading to a cardinal
+      ;; direction. Note that the vertical axes are not inclusive of their
+      ;; end points, so we prefer movement on the x axis if our target is
+      ;; directly on a diagonal.
+
+      ;; If the angle is in [0,45) or (315, 360) then we want to go up.
+      if angle_to < 45 or angle_to > 315
       [set heading 0]
-      [set heading 180]
-    ]
 
-    ;; If we're not on top of it we need to move.
-    if yDiff != 0 or xDiff != 0
-    [fd 1]
+      ;; If the angle is in [45, 135] we go right.
+      if angle_to >= 45 and angle_to <= 135
+      [set heading 90]
+
+      ;; If the angle is in (135, 225) we go down.
+      if angle_to > 135 and angle_to < 225
+      [set heading 180]
+
+      ;; If the angle is in [225, 315] we go left.
+      if angle_to >= 225 and angle_to <= 315
+      [set heading -90]
+
+      ;; Need to move now.
+      fd 1
+    ]
   ]
 end
 
@@ -347,9 +354,9 @@ to grow-grass  ;; patch procedure
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-201
+11
 10
-575
+385
 385
 -1
 -1
@@ -374,10 +381,10 @@ ticks
 30.0
 
 SLIDER
-25
-56
-197
-89
+385
+55
+557
+88
 initial-number-sheep
 initial-number-sheep
 0
@@ -389,10 +396,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-26
-454
-197
-487
+557
+55
+728
+88
 initial-number-wolves
 initial-number-wolves
 0
@@ -404,10 +411,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-277
-533
-346
-566
+94
+385
+163
+418
 reset
 setup
 NIL
@@ -421,10 +428,10 @@ NIL
 1
 
 BUTTON
-419
-533
-488
-566
+232
+385
+301
+418
 loop
 go
 T
@@ -438,10 +445,10 @@ NIL
 0
 
 PLOT
-222
-387
-558
-530
+346
+451
+682
+594
 populations
 time
 pop.
@@ -458,9 +465,9 @@ PENS
 "grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
-25
+385
 10
-103
+463
 55
 sheep
 count sheep
@@ -469,10 +476,10 @@ count sheep
 11
 
 MONITOR
-26
-407
-104
-452
+557
+10
+635
+55
 wolves
 count wolves
 3
@@ -480,10 +487,10 @@ count wolves
 11
 
 MONITOR
-26
-524
-104
-569
+728
+10
+806
+55
 grass / 4
 count patches with [ pcolor = green ] / 4
 0
@@ -491,10 +498,10 @@ count patches with [ pcolor = green ] / 4
 11
 
 SLIDER
-26
-570
-197
-603
+728
+55
+899
+88
 grass-regrowth-time
 grass-regrowth-time
 0
@@ -506,10 +513,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-226
-197
-259
+385
+219
+557
+252
 reproduce-energy
 reproduce-energy
 0
@@ -521,10 +528,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-348
-533
-417
-566
+163
+385
+232
+418
 step
 go
 NIL
@@ -538,10 +545,10 @@ NIL
 1
 
 SLIDER
-25
-260
-197
-293
+385
+252
+557
+285
 fov-cone-angle
 fov-cone-angle
 0
@@ -553,10 +560,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-294
-197
-327
+385
+285
+557
+318
 fov-cone-radius
 fov-cone-radius
 0
@@ -568,10 +575,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-90
-197
-123
+385
+88
+557
+121
 sheep-gain-from-food
 sheep-gain-from-food
 0
@@ -583,10 +590,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-191
-197
-224
+385
+186
+557
+219
 max-energy
 max-energy
 0
@@ -598,10 +605,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-157
-197
-190
+385
+153
+557
+186
 min-energy
 min-energy
 0
@@ -613,10 +620,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-26
-487
-198
-520
+557
+154
+728
+187
 attack-damage
 attack-damage
 0
@@ -628,10 +635,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-25
-123
-197
-156
+385
+120
+557
+153
 sheep-energy-loss
 sheep-energy-loss
 0
@@ -643,10 +650,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-598
-65
-793
-98
+557
+88
+728
+121
 wolf-fov-cone-angle
 wolf-fov-cone-angle
 0
@@ -658,10 +665,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-26
-330
-200
-364
+385
+318
+557
+351
 alpha
 alpha
 0
@@ -673,10 +680,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-598
-98
-794
-131
+557
+121
+728
+154
 wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
@@ -688,10 +695,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-26
-365
-200
-399
+385
+351
+557
+384
 epsilon
 epsilon
 0
@@ -703,10 +710,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-804
-227
-911
-261
+151
+418
+246
+451
 test-RL
 test-RL
 0
@@ -714,10 +721,10 @@ test-RL
 -1000
 
 PLOT
-577
-389
-912
-532
+11
+451
+346
+594
 average sheep lifetime
 NIL
 NIL
