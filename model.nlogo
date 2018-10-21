@@ -140,9 +140,52 @@ to go
 end
 
 to move-wolf
-  ifelse random-float 1 < 0.5
-    [ rt 90 ] [ lt 90 ]
-  fd 1
+  let sheep_in_cone sheep in-cone wolf-fov-cone-radius wolf-fov-cone-angle
+  let closest_sheep min-one-of sheep_in_cone [distance myself]
+
+  ;; No closest sheep, move randomly.
+  ifelse closest_sheep = nobody
+  [
+    ;; Chance to turn
+    if random-float 1 < 0.25
+    [
+      ;; Turn left or right 50/50.
+      ifelse random-float 1 < 0.5
+      [ rt 90 ]
+      [ lt 90 ]
+    ]
+    ;; Move forwards always if we're moving randomly.
+    fd 1
+  ]
+  ;; Seen a sheep move towards it on a cardinal direction.
+  [
+    ;; Get the difference between our position and theirs.
+    let xDiff [xcor] of closest_sheep - xcor
+    let yDiff [ycor] of closest_sheep - ycor
+
+    ;; If the x diff is non-zero and greater than the y diff, we should
+    ;; move in the x axis. Choose direction based on sign. Note that we
+    ;; choose >= here and later use only > for yDiff. This is tie
+    ;; breaking. Prefer to move on xAxis.
+    if xDiff != 0 and abs xDiff >= abs yDiff
+    [
+      ifelse xDiff > 0
+      [set heading 90]
+      [set heading -90]
+    ]
+
+    ;; If the y diff is non-zero...
+    if yDiff != 0 and abs yDiff > abs xDiff
+    [
+      ifelse yDiff > 0
+      [set heading 0]
+      [set heading 180]
+    ]
+
+    ;; If we're not on top of it we need to move.
+    if yDiff != 0 or xDiff != 0
+    [fd 1]
+  ]
 end
 
 to move-sheep  ;; turtle procedure
@@ -296,7 +339,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-100.0
+10.0
 5
 1
 NIL
@@ -537,6 +580,36 @@ sheep-energy-loss
 5
 1.0
 0.25
+1
+NIL
+HORIZONTAL
+
+SLIDER
+598
+65
+793
+98
+wolf-fov-cone-angle
+wolf-fov-cone-angle
+0
+360
+180.0
+15
+1
+NIL
+HORIZONTAL
+
+SLIDER
+598
+98
+794
+131
+wolf-fov-cone-radius
+wolf-fov-cone-radius
+0
+60
+15.0
+3
 1
 NIL
 HORIZONTAL
