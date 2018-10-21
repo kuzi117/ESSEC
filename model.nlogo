@@ -5,7 +5,7 @@ extensions [
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick ] ;; change to sheep-own?
+turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward ] ;; change to sheep-own?
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
@@ -28,18 +28,28 @@ to-report state ;; a-sheep
   let sheep_in_cone sheep in-cone fov-cone-radius fov-cone-angle
   set sheep_in_cone other sheep_in_cone ;; Other sheep in cone
   let closest_sheep min-one-of sheep_in_cone [distance myself]
-  if closest_sheep != nobody
-     [ set P_s list ([xcor] of closest_sheep - xcor) ([ycor] of closest_sheep - ycor)]
+  if closest_sheep != nobody  [
+    ifelse distance closest_sheep != 0
+      [ set P_s list (sin towards closest_sheep * distance closest_sheep) (cos towards closest_sheep * distance closest_sheep)]
+      [ set P_s list 0 0 ]
+  ]
+
 
   let wolves_in_cone wolves in-cone fov-cone-radius fov-cone-angle
   let closest_wolf min-one-of wolves_in_cone [distance myself]
-  if closest_wolf != nobody
-      [ set P_w list ([xcor] of closest_wolf - xcor) ([ycor] of closest_wolf - ycor)]
+  if closest_wolf != nobody [
+    ifelse distance closest_wolf != 0
+      [ set P_w list (sin towards closest_wolf * distance closest_wolf) (cos towards closest_wolf * distance closest_wolf)]
+      [ set P_w list 0 0 ]
+  ]
 
   let grass_in_cone patches in-cone fov-cone-radius fov-cone-angle with [pcolor = green]
   let closest_grass min-one-of grass_in_cone [distance myself]
-  if closest_grass != nobody
-     [ set P_g list ([pxcor] of closest_grass - xcor) ([pycor] of closest_grass - ycor)]
+  if closest_grass != nobody [
+    ifelse distance closest_grass != 0
+     [ set P_g list (sin towards closest_grass * distance closest_grass) (cos towards closest_grass * distance closest_grass)]
+     [ set P_g list 0 0  ]
+   ]
 
 ;;  if closest_wolf != nobody and closest_sheep != nobody
 ;;    [
@@ -61,7 +71,7 @@ to-report state ;; a-sheep
     set max_pref py:runresult "max_pref"
     set last_id_of_preferred_sheep_in_cone py:runresult "prefs_info[np.random.choice(np.flatnonzero(np.array([item[1] for item in prefs_info]) == max_pref))][0]"
   ]
-
+  ;; show (sentence D max_pref enrg P_a P_s P_w P_g)
   report (sentence D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
 end
 
@@ -98,20 +108,39 @@ to setup
     set last_state []
     py:set "id" who
     set birth_tick 0
+    set generation 0
     ifelse test-RL [
-      (py:run
-        "agent_genomes[id] = {'action_net': np.zeros((11, 5)), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
-        "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-        "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-        "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-      )
+      ifelse evolved-preference [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.zeros((11, 5)), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ] [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.zeros((11, 5)), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.zeros((66, 1))}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+         )
+      ]
     ] [
-      (py:run
-        "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
-        "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-        "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-        "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-      )
+      ifelse evolved-preference [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ] [
+         (py:run
+          "agent_genomes[id] = {'action_net': np.random.rand(11, 5), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.zeros((66, 1))}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ]
     ]
   ]
 
@@ -221,6 +250,8 @@ to update-action-net
 
     let td_error value_state - value_last_state
 
+    set last_reward td_error
+
     let q_values_last_state py:runresult "np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['action_net']).flat"
     let q_values_state py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['action_net']).flat"
 
@@ -290,15 +321,20 @@ to reproduce ;; turtle procedure
     if last_id_of_preferred_sheep_in_cone != -1 [
       set energy (energy - reproduce-energy)
       py:set "parent_id" who
+      let parent_gen generation
       ;; pick a partner
       py:set "partner_id" last_id_of_preferred_sheep_in_cone
+      let partner_gen [generation] of turtle last_id_of_preferred_sheep_in_cone
+      let max_parent_gen max (list parent_gen partner_gen)
       hatch 1 [
         set heading one-of (list 0 90 180 270)
         set energy reproduce-energy
         fd 1
         py:set "id" who
         set birth_tick ticks
+        set generation max_parent_gen + 1
         ifelse test-RL [ py:set "crossover" 0 ] [ py:set "crossover" 1 ]
+        ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['initial_action_net'] + 0.5 *  agent_genomes[partner_id]['initial_action_net'] + \\"
           "0.1 * np.random.rand(11, 5) * crossover,\\"
@@ -307,7 +343,7 @@ to reproduce ;; turtle procedure
           "0.1 * np.random.rand(11, 1),\\"
 
           "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
-          "0.1 * np.random.rand(66, 1)}"
+          "0.1 * np.random.rand(66, 1) * ev_crossover}"
 
           "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -389,7 +425,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-30.0
+100.0
 1
 1
 NIL
@@ -506,7 +542,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 1000
-500.0
+200.0
 50
 1
 NIL
@@ -521,7 +557,7 @@ reproduce-energy
 reproduce-energy
 0
 100
-10.0
+15.0
 5
 1
 NIL
@@ -553,7 +589,7 @@ fov-cone-angle
 fov-cone-angle
 0
 360
-360.0
+60.0
 15
 1
 NIL
@@ -568,7 +604,7 @@ fov-cone-radius
 fov-cone-radius
 0
 60
-15.0
+3.0
 3
 1
 NIL
@@ -583,7 +619,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0
 100
-25.0
+10.0
 5
 1
 NIL
@@ -628,7 +664,7 @@ attack-damage
 attack-damage
 0
 100
-25.0
+20.0
 5
 1
 NIL
@@ -673,7 +709,7 @@ alpha
 alpha
 0
 1
-0.5
+0.3
 0.01
 1
 NIL
@@ -688,7 +724,7 @@ wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
 60
-15.0
+6.0
 3
 1
 NIL
@@ -703,7 +739,7 @@ epsilon
 epsilon
 0
 1
-0.1
+0.25
 0.01
 1
 NIL
@@ -716,7 +752,7 @@ SWITCH
 451
 test-RL
 test-RL
-0
+1
 1
 -1000
 
@@ -737,6 +773,72 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plotxy num_sheep_dead average_sheep_lifetime"
+
+PLOT
+899
+8
+1290
+242
+plot 1
+NIL
+NIL
+0.0
+100.0
+0.0
+30.0
+true
+false
+"" "if min [generation] of sheep != max [generation] of sheep\n[ set-plot-x-range min [generation] of sheep max [generation] of sheep ]"
+PENS
+"default" 1.0 1 -16777216 true "" "histogram [generation] of sheep"
+
+PLOT
+939
+270
+1139
+420
+normalized_sheep_lifetime
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plotxy ticks average_sheep_lifetime / (count sheep + num_sheep_dead)"
+
+PLOT
+612
+197
+812
+347
+average_reward
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [last_reward] of sheep"
+"pen-1" 1.0 0 -5825686 true "" "plot 0"
+
+SWITCH
+709
+31
+863
+65
+evolved-preference
+evolved-preference
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
