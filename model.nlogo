@@ -17,20 +17,21 @@ globals [
 
 to-report state ;; a-sheep
   ;; let T ticks
-  let enrg energy
+  let enrg energy / max-energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
-  let P_s list 10 10 ;; Relative Position of Closest Sheep
-  let P_w list 10 10 ;; Relative Position of Closest Wolf
-  let P_g list 10 10 ;; Relative Position of Closest Grass
-  let P_sid list 10 10 ;; Relative Position of Closest Sheep in danger
+  let P_s list 1.0 1.0  ;; Relative Position of Closest Sheep
+  let P_w list 1.0 1.0 ;; Relative Position of Closest Wolf
+  let P_g list 1.0 1.0 ;; Relative Position of Closest Grass
+  ;; let P_sid list 10 10 ;; Relative Position of Closest Sheep in danger
 
   let sheep_in_cone sheep in-cone fov-cone-radius fov-cone-angle
   set sheep_in_cone other sheep_in_cone ;; Other sheep in cone
   let closest_sheep min-one-of sheep_in_cone [distance myself]
   if closest_sheep != nobody  [
     ifelse distance closest_sheep != 0
-      [ set P_s list (sin towards closest_sheep * distance closest_sheep) (cos towards closest_sheep * distance closest_sheep)]
+      [ set P_s list ((sin towards closest_sheep * distance closest_sheep) / (fov-cone-radius + 1))
+                     ((cos towards closest_sheep * distance closest_sheep) / (fov-cone-radius + 1))]
       [ set P_s list 0 0 ]
   ]
 
@@ -39,7 +40,8 @@ to-report state ;; a-sheep
   let closest_wolf min-one-of wolves_in_cone [distance myself]
   if closest_wolf != nobody [
     ifelse distance closest_wolf != 0
-      [ set P_w list (sin towards closest_wolf * distance closest_wolf) (cos towards closest_wolf * distance closest_wolf)]
+      [ set P_w list ((sin towards closest_wolf * distance closest_wolf) / (fov-cone-radius + 1))
+                     ((cos towards closest_wolf * distance closest_wolf) / (fov-cone-radius + 1))]
       [ set P_w list 0 0 ]
   ]
 
@@ -47,7 +49,8 @@ to-report state ;; a-sheep
   let closest_grass min-one-of grass_in_cone [distance myself]
   if closest_grass != nobody [
     ifelse distance closest_grass != 0
-     [ set P_g list (sin towards closest_grass * distance closest_grass) (cos towards closest_grass * distance closest_grass)]
+     [ set P_g list ((sin towards closest_grass * distance closest_grass) / (fov-cone-radius + 1))
+                    ((cos towards closest_grass * distance closest_grass) / (fov-cone-radius + 1))]
      [ set P_g list 0 0  ]
    ]
 
@@ -86,7 +89,8 @@ to setup
     "import numpy as np"
     "agent_genomes = {}"
     "agent_preferences = {}"
-    "get_preference = lambda self, other: np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, agent_genomes[other]['initial_action_net'].flat)).flat, agent_genomes[self]['preference_net'])[0]"
+    "get_preference = lambda self, other: (np.tanh(np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, \\"
+                     "agent_genomes[other]['initial_action_net'].flat)).flat, agent_genomes[self]['preference_net']))[0] + 1) / 2."
   )
 
   ;; setup the grass
@@ -163,8 +167,8 @@ to go
     ;; sheep always loose 0.5 units of energy each tick
     set energy energy - sheep-energy-loss
     eat-grass
-    maybe-die
     update-action-net
+    maybe-die
 ;;    if ticks mod breeding-frenzy-freq = 0
 ;;      [ reproduce-sheep ]
 ;;    if ticks mod breeding-frenzy-freq = 0
@@ -173,6 +177,12 @@ to go
     ;;  "print vars"
     ;; )
   ]
+
+  ;; py:set "sheep_count" count sheep
+  ;; (py:run
+  ;; "assert( len(agent_genomes) == len(agent_preferences) == sheep_count )"
+  ;; )
+
   ask wolves [
     move-wolf
     ;; wolves always loose 0.5 units of energy each tick
@@ -263,7 +273,7 @@ to update-action-net
     py:set "last_action" last_action
     py:set "alpha" alpha
     (py:run
-      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * err * np.array(agent_last_state)"
+      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 11 * err * np.array(agent_last_state)"
     )
   ]
 end
@@ -370,12 +380,12 @@ to maybe-die  ;; turtle procedure
     set num_sheep_dead (num_sheep_dead + 1)
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
     set average_sheep_lifetime average_sheep_lifetime + delta
-    die
     py:set "dead_sheep" who
     (py:run
       "del agent_genomes[dead_sheep]"
       "del agent_preferences[dead_sheep]"
     )
+    die
   ]
 end
 
@@ -406,12 +416,12 @@ GRAPHICS-WINDOW
 1
 1
 1
--30
-30
--30
-30
-1
-1
+0
+60
+0
+60
+0
+0
 1
 ticks
 30.0
@@ -589,7 +599,7 @@ fov-cone-angle
 fov-cone-angle
 0
 360
-60.0
+360.0
 15
 1
 NIL
@@ -604,8 +614,8 @@ fov-cone-radius
 fov-cone-radius
 0
 60
-3.0
-3
+10.0
+1
 1
 NIL
 HORIZONTAL
@@ -739,7 +749,7 @@ epsilon
 epsilon
 0
 1
-0.25
+0.1
 0.01
 1
 NIL
@@ -806,7 +816,7 @@ NIL
 10.0
 true
 false
-"" ""
+"" "set-plot-y-range 0 0.1"
 PENS
 "default" 1.0 0 -16777216 true "" "plotxy ticks average_sheep_lifetime / (count sheep + num_sheep_dead)"
 
@@ -821,10 +831,10 @@ NIL
 0.0
 10.0
 0.0
-10.0
+5.0
 true
 false
-"" ""
+"" "set-plot-y-range -1 1"
 PENS
 "default" 1.0 0 -16777216 true "" "plot mean [last_reward] of sheep"
 "pen-1" 1.0 0 -5825686 true "" "plot 0"
