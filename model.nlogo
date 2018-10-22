@@ -746,9 +746,9 @@ NIL
 HORIZONTAL
 
 SWITCH
-151
+72
 418
-246
+167
 451
 test-RL
 test-RL
@@ -775,10 +775,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plotxy num_sheep_dead average_sheep_lifetime"
 
 PLOT
-899
-8
-1290
-242
+682
+451
+1073
+737
 plot 1
 NIL
 NIL
@@ -793,10 +793,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "histogram [generation] of sheep"
 
 PLOT
-939
-270
-1139
-420
+211
+594
+411
+737
 normalized_sheep_lifetime
 NIL
 NIL
@@ -811,10 +811,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plotxy ticks average_sheep_lifetime / (count sheep + num_sheep_dead)"
 
 PLOT
-612
-197
-812
-347
+11
+594
+211
+737
 average_reward
 NIL
 NIL
@@ -830,10 +830,10 @@ PENS
 "pen-1" 1.0 0 -5825686 true "" "plot 0"
 
 SWITCH
-709
-31
-863
-65
+167
+418
+321
+451
 evolved-preference
 evolved-preference
 1
