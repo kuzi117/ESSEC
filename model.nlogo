@@ -87,6 +87,7 @@ to setup
   py:setup py:python
   (py:run
     "import numpy as np"
+    "import ESSEC"
     "agent_genomes = {}"
     "agent_preferences = {}"
     "get_preference = lambda self, other: (np.tanh(np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, \\"
@@ -166,7 +167,6 @@ to go
     move-sheep
     ;; sheep always loose 0.5 units of energy each tick
     set energy energy - sheep-energy-loss
-    eat-grass
     update-action-net
     maybe-die
 ;;    if ticks mod breeding-frenzy-freq = 0
@@ -450,7 +450,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-10.0
+5.0
 5
 1
 NIL
@@ -629,7 +629,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0
 100
-10.0
+20.0
 5
 1
 NIL
@@ -689,7 +689,7 @@ sheep-energy-loss
 sheep-energy-loss
 0
 5
-1.0
+0.5
 0.25
 1
 NIL
@@ -697,9 +697,9 @@ HORIZONTAL
 
 SLIDER
 557
-88
+252
 728
-121
+285
 wolf-fov-cone-angle
 wolf-fov-cone-angle
 0
@@ -727,9 +727,9 @@ HORIZONTAL
 
 SLIDER
 557
-121
+285
 728
-154
+318
 wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
@@ -832,9 +832,9 @@ NIL
 10.0
 0.0
 5.0
-true
 false
-"" "set-plot-y-range -1 1"
+false
+"set-plot-y-range -1 1" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot mean [last_reward] of sheep"
 "pen-1" 1.0 0 -5825686 true "" "plot 0"
@@ -849,6 +849,26 @@ evolved-preference
 1
 1
 -1000
+
+PLOT
+1142
+441
+1619
+695
+Average Reward
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"set-plot-y-range -2 2\npy:run(\"ESSEC.initStepPlot(50)\")" "py:set \"stepReward\" [last_reward] of sheep\npy:run(\"ESSEC.addStepRewards(stepReward)\")"
+PENS
+"Window" 1.0 0 -13840069 true "" "plot py:runresult(\"ESSEC.getWindowRewardAvg()\")"
+"All time" 1.0 0 -2674135 true "" "plot py:runresult(\"ESSEC.getAllRewardAvg()\")"
+"Zero" 1.0 0 -7500403 true "" "plot 0"
 
 @#$#@#$#@
 ## WHAT IS IT?
