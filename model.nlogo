@@ -451,9 +451,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-56
+55
 385
-125
+124
 418
 reset
 setup
@@ -468,9 +468,9 @@ NIL
 1
 
 BUTTON
-194
+193
 385
-263
+262
 418
 loop
 go
@@ -485,13 +485,13 @@ NIL
 0
 
 PLOT
-346
+11
 451
-682
+402
 594
-populations
-time
-pop.
+Populations
+Time
+NIL
 0.0
 100.0
 0.0
@@ -546,7 +546,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 1000
-750.0
+200.0
 50
 1
 NIL
@@ -568,9 +568,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-125
+124
 385
-194
+193
 418
 step
 go
@@ -761,15 +761,15 @@ test-RL
 -1000
 
 PLOT
-11
-451
-346
+402
 594
-average sheep lifetime
-NIL
+793
+737
+Average Sheep Lifetime
+Time
 NIL
 0.0
-10.0
+100.0
 0.0
 10.0
 true
@@ -779,15 +779,15 @@ PENS
 "default" 1.0 0 -16777216 true "" "plotxy num_sheep_dead average_sheep_lifetime"
 
 PLOT
-682
-451
-1073
+11
+594
+402
 737
-plot 1
-NIL
+Generational Populations
+Generation
 NIL
 0.0
-100.0
+10.0
 0.0
 30.0
 true
@@ -795,43 +795,6 @@ false
 "" "if min [generation] of sheep != max [generation] of sheep\n[ set-plot-x-range min [generation] of sheep max [generation] of sheep ]"
 PENS
 "default" 1.0 1 -16777216 true "" "histogram [generation] of sheep"
-
-PLOT
-211
-594
-411
-737
-normalized_sheep_lifetime
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" "set-plot-y-range 0 0.1"
-PENS
-"default" 1.0 0 -16777216 true "" "plotxy ticks average_sheep_lifetime / (count sheep + num_sheep_dead)"
-
-PLOT
-11
-594
-211
-737
-average_reward
-NIL
-NIL
-0.0
-10.0
-0.0
-5.0
-false
-false
-"set-plot-y-range -1 1" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot mean [last_reward] of sheep"
-"pen-1" 1.0 0 -5825686 true "" "plot 0"
 
 SWITCH
 167
@@ -845,15 +808,15 @@ evolved-preference
 -1000
 
 PLOT
-1142
-441
-1619
-695
-Average Reward
-NIL
+401
+451
+792
+594
+Mean Moving Average of Living Sheep's Rewards
+Time
 NIL
 0.0
-10.0
+100.0
 0.0
 10.0
 true
@@ -863,11 +826,12 @@ PENS
 "Window" 1.0 0 -13840069 true "" "plot py:runresult(\"ESSEC.getWindowRewardAvg()\")"
 "All time" 1.0 0 -2674135 true "" "plot py:runresult(\"ESSEC.getAllRewardAvg()\")"
 "Zero" 1.0 0 -7500403 true "" "plot 0"
+"One Step" 1.0 0 -955883 true "" "plot mean [last_reward] of sheep"
 
 BUTTON
-263
+262
 385
-340
+339
 418
 Profiler
 setup                  ;; set up the model\nprofiler:start         ;; start profiling\nrepeat 30 [ go ]       ;; run something you want to measure\nprofiler:stop          ;; stop profiling\nprint profiler:report  ;; view the results\nprofiler:reset         ;; clear the data\n
