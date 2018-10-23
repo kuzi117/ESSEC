@@ -1,5 +1,4 @@
 import numpy
-import queue
 
 agent_genomes = {}
 agent_preferences = {}
