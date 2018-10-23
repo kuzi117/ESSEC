@@ -6,7 +6,7 @@ extensions [
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward current_state ] ;; change to sheep-own?
+turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward current_state reward_avg reward_count ] ;; change to sheep-own?
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
@@ -113,6 +113,8 @@ to setup
     set heading one-of (list 0 90 180 270)
     set last_state []
     set current_state []
+    set reward_avg 0
+    set reward_count 0
     py:set "id" who
     set birth_tick 0
     set generation 0
@@ -269,6 +271,8 @@ to update-action-net
     )
 
     set last_reward py:runresult "td_error"
+    set reward_count (reward_count + 1)
+    set reward_avg (reward_avg + (last_reward - reward_avg) / reward_count)
   ]
 end
 
@@ -337,6 +341,8 @@ to reproduce ;; turtle procedure
         py:set "id" who
         set birth_tick ticks
         set generation max_parent_gen + 1
+        set reward_avg 0
+        set reward_count 0
         ifelse test-RL [ py:set "crossover" 0 ] [ py:set "crossover" 1 ]
         ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
         (py:run
@@ -429,7 +435,7 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-100.0
+250.0
 1
 1
 NIL
@@ -500,9 +506,9 @@ true
 true
 "" ""
 PENS
-"sheep" 1.0 0 -13345367 true "" "plot count sheep"
-"wolves" 1.0 0 -2674135 true "" "plot count wolves"
-"grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
+"Sheep" 1.0 0 -13345367 true "" "plot count sheep"
+"Wolves" 1.0 0 -2674135 true "" "plot count wolves"
+"Grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
 385
@@ -766,7 +772,7 @@ PLOT
 793
 737
 Average Sheep Lifetime
-Time
+Sheep
 NIL
 0.0
 100.0
@@ -812,7 +818,7 @@ PLOT
 451
 792
 594
-Mean Moving Average of Living Sheep's Rewards
+Mean Moving Average of Sheep's Rewards
 Time
 NIL
 0.0
@@ -824,9 +830,10 @@ true
 "set-plot-y-range -2 2\npy:run(\"ESSEC.initStepPlot(50)\")" "py:set \"stepReward\" [last_reward] of sheep\npy:run(\"ESSEC.addStepRewards(stepReward)\")"
 PENS
 "Window" 1.0 0 -13840069 true "" "plot py:runresult(\"ESSEC.getWindowRewardAvg()\")"
-"All time" 1.0 0 -2674135 true "" "plot py:runresult(\"ESSEC.getAllRewardAvg()\")"
+"All Time" 1.0 0 -2674135 true "" "plot py:runresult(\"ESSEC.getAllRewardAvg()\")"
+"One Step" 1.0 0 -14835848 true "" "plot mean [last_reward] of sheep"
+"All Time Living" 1.0 0 -13345367 true "" "plot mean [reward_avg] of sheep"
 "Zero" 1.0 0 -7500403 true "" "plot 0"
-"One Step" 1.0 0 -955883 true "" "plot mean [last_reward] of sheep"
 
 BUTTON
 262
