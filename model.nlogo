@@ -1,11 +1,12 @@
 extensions [
  py;
+  profiler;
 ]
 
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward ] ;; change to sheep-own?
+turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward current_state ] ;; change to sheep-own?
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
@@ -111,6 +112,7 @@ to setup
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
     set last_state []
+    set current_state []
     py:set "id" who
     set birth_tick 0
     set generation 0
@@ -164,18 +166,12 @@ end
 to go
   if not any? sheep [ stop ]
   ask sheep [
+    set current_state state
+    update-action-net
     move-sheep
     ;; sheep always loose 0.5 units of energy each tick
     set energy energy - sheep-energy-loss
-    update-action-net
     maybe-die
-;;    if ticks mod breeding-frenzy-freq = 0
-;;      [ reproduce-sheep ]
-;;    if ticks mod breeding-frenzy-freq = 0
-;;      [ show state ]
-    ;;(py:run
-    ;;  "print vars"
-    ;; )
   ]
 
   ;; py:set "sheep_count" count sheep
@@ -254,34 +250,31 @@ end
 to update-action-net
   if not empty? last_state [
     py:set "agent_last_state" last_state
-    py:set "agent_state" state
-    let value_last_state py:runresult "np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['evaluation_net']).flat[0]"
-    let value_state py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['evaluation_net']).flat[0]"
-
-    let td_error value_state - value_last_state
-
-    set last_reward td_error
-
-    let q_values_last_state py:runresult "np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['action_net']).flat"
-    let q_values_state py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['action_net']).flat"
-
-    let max_q_val max q_values_state
-    let q_val_last_state_action item last_action q_values_last_state
-    ;; L = ((r + gamma * max_a' Q(s', a')) - Q(s, a))**2
-    py:set "err" (td_error + 0.99 *  max_q_val - q_val_last_state_action)
-
+    py:set "agent_state" current_state
     py:set "last_action" last_action
+    py:set "agent_id" who
+
+    ;; L = ((r + gamma * max_a' Q(s', a')) - Q(s, a))**2
     py:set "alpha" alpha
     (py:run
+      "value_last_state = np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['evaluation_net']).flat[0]"
+      "value_state = np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['evaluation_net']).flat[0]"
+      "td_error = value_state - value_last_state"
+      "q_vals_last_state = np.dot(np.array(agent_last_state).flat, agent_genomes[agent_id]['action_net']).flat"
+      "q_vals_state = np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['action_net']).flat"
+      "max_q_val = np.max(q_vals_state)"
+      "q_val_last_state_action = q_vals_last_state[last_action]"
+      "err = td_error + 0.99 * max_q_val - q_val_last_state_action"
       "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 11 * err * np.array(agent_last_state)"
     )
+
+    set last_reward py:runresult "td_error"
   ]
 end
 
 to move-sheep  ;; sheep procedure
   py:set "agent_id" who
-  py:set "agent_state" state
-  set last_state state
+  py:set "agent_state" current_state
   ;; show state
   let actions py:runresult "np.dot(np.array(agent_state).flat, agent_genomes[agent_id]['action_net']).flat"
 
@@ -305,6 +298,7 @@ to move-sheep  ;; sheep procedure
       ]
     ]
 
+    set last_state current_state
     set last_action action
 end
 
@@ -420,8 +414,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -457,9 +451,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-94
+56
 385
-163
+125
 418
 reset
 setup
@@ -474,9 +468,9 @@ NIL
 1
 
 BUTTON
-232
+194
 385
-301
+263
 418
 loop
 go
@@ -552,7 +546,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 1000
-200.0
+750.0
 50
 1
 NIL
@@ -574,9 +568,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-163
+125
 385
-232
+194
 418
 step
 go
@@ -846,7 +840,7 @@ SWITCH
 451
 evolved-preference
 evolved-preference
-1
+0
 1
 -1000
 
@@ -869,6 +863,23 @@ PENS
 "Window" 1.0 0 -13840069 true "" "plot py:runresult(\"ESSEC.getWindowRewardAvg()\")"
 "All time" 1.0 0 -2674135 true "" "plot py:runresult(\"ESSEC.getAllRewardAvg()\")"
 "Zero" 1.0 0 -7500403 true "" "plot 0"
+
+BUTTON
+263
+385
+340
+418
+Profiler
+setup                  ;; set up the model\nprofiler:start         ;; start profiling\nrepeat 30 [ go ]       ;; run something you want to measure\nprofiler:stop          ;; stop profiling\nprint profiler:report  ;; view the results\nprofiler:reset         ;; clear the data\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
