@@ -6,7 +6,8 @@ extensions [
 breed [sheep a-sheep]
 breed [wolves wolf]
 
-turtles-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward current_state ] ;; change to sheep-own?
+sheep-own [ energy last_id_of_preferred_sheep_in_cone last_state last_action birth_tick generation last_reward current_state ]
+wolves-own [ energy ]
 patches-own [ countdown ]  ;; patches countdown until they regrow
 
 globals [
@@ -108,7 +109,8 @@ to setup
   [
     set size 3
     set color white
-    set energy random max-energy ;; --> random energy? <--
+    set energy random max-energy - min-energy;; --> random energy? <--
+    set energy energy + min-energy
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
     set last_state []
@@ -171,7 +173,7 @@ to go
     move-sheep
     ;; sheep always loose 0.5 units of energy each tick
     set energy energy - sheep-energy-loss
-    maybe-die
+    maybe-die-sheep
   ]
 
   ;; py:set "sheep_count" count sheep
@@ -179,13 +181,28 @@ to go
   ;; "assert( len(agent_genomes) == len(agent_preferences) == sheep_count )"
   ;; )
 
+  if not any? wolves [
+    create-wolves 1 [
+      setxy round random-xcor round random-ycor
+      set heading one-of (list 0 90 180 270)
+      set energy random max-energy
+      set size 3
+      set color black
+    ]
+  ]
   ask wolves [
+    ;; Move wolves every turn and lose energy
     move-wolf
-    ;; wolves always loose 0.5 units of energy each tick
     set energy energy - 0.5
+
+    ;; If there's a sheep here, take a bite.
     catch-sheep
-    ;;maybe-die: Invincible Wolves...
-    ;;reproduce-wolves
+
+    ;; Die if we don't have enough energy.
+    maybe-die-wolves
+
+    ;; Reproduce if we have too much energy.
+    maybe-reproduce-wolves
   ]
   ask patches [ grow-grass ]
   tick
@@ -316,8 +333,16 @@ to reproduce-sheep  ;; sheep procedure
   reproduce
 end
 
-to reproduce-wolves  ;; wolf procedure
-  reproduce
+to maybe-reproduce-wolves  ;; wolf procedure
+  if energy > wolf-reproduce-energy
+  [
+    set energy energy - wolf-reproduce-energy
+    hatch 1 [
+      set energy wolf-reproduce-energy
+      set heading one-of (list 0 90 180 270)
+      fd 1
+    ]
+  ]
 end
 
 to reproduce ;; turtle procedure
@@ -364,10 +389,16 @@ to catch-sheep  ;; wolf procedure
     ask prey [
       set energy (energy - attack-damage)
     ]
+    if [energy] of prey <= 0 [
+      set energy energy + wolf-gain-from-kill
+    ]
+    ask prey [
+      maybe-die-sheep
+    ]
   ]
 end
 
-to maybe-die  ;; turtle procedure
+to maybe-die-sheep  ;; turtle procedure
   ;; when energy dips below zero, die
   if energy < 0 [
     let lifetime ticks - birth_tick
@@ -381,6 +412,11 @@ to maybe-die  ;; turtle procedure
     )
     die
   ]
+end
+
+to maybe-die-wolves
+  if energy < 0
+  [ die ]
 end
 
 to grow-grass  ;; patch procedure
@@ -429,8 +465,8 @@ initial-number-sheep
 initial-number-sheep
 0
 250
-100.0
-1
+30.0
+5
 1
 NIL
 HORIZONTAL
@@ -444,7 +480,7 @@ initial-number-wolves
 initial-number-wolves
 0
 250
-5.0
+1.0
 5
 1
 NIL
@@ -546,7 +582,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 1000
-750.0
+200.0
 50
 1
 NIL
@@ -554,9 +590,9 @@ HORIZONTAL
 
 SLIDER
 385
-219
+220
 557
-252
+253
 reproduce-energy
 reproduce-energy
 0
@@ -586,9 +622,9 @@ NIL
 
 SLIDER
 385
-252
+253
 557
-285
+286
 fov-cone-angle
 fov-cone-angle
 0
@@ -601,9 +637,9 @@ HORIZONTAL
 
 SLIDER
 385
-285
+286
 557
-318
+319
 fov-cone-radius
 fov-cone-radius
 0
@@ -631,9 +667,9 @@ HORIZONTAL
 
 SLIDER
 385
-186
+187
 557
-219
+220
 max-energy
 max-energy
 0
@@ -646,9 +682,9 @@ HORIZONTAL
 
 SLIDER
 385
-153
+154
 557
-186
+187
 min-energy
 min-energy
 0
@@ -661,9 +697,9 @@ HORIZONTAL
 
 SLIDER
 557
-154
+318
 728
-187
+351
 attack-damage
 attack-damage
 0
@@ -676,9 +712,9 @@ HORIZONTAL
 
 SLIDER
 385
-120
+121
 557
-153
+154
 sheep-energy-loss
 sheep-energy-loss
 0
@@ -691,9 +727,9 @@ HORIZONTAL
 
 SLIDER
 557
-252
+253
 728
-285
+286
 wolf-fov-cone-angle
 wolf-fov-cone-angle
 0
@@ -706,9 +742,9 @@ HORIZONTAL
 
 SLIDER
 385
-318
+319
 557
-351
+352
 alpha
 alpha
 0
@@ -721,24 +757,24 @@ HORIZONTAL
 
 SLIDER
 557
-285
+286
 728
-318
+319
 wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
 60
-6.0
-3
+5.0
+4
 1
 NIL
 HORIZONTAL
 
 SLIDER
 385
-351
+352
 557
-384
+385
 epsilon
 epsilon
 0
@@ -840,7 +876,7 @@ SWITCH
 451
 evolved-preference
 evolved-preference
-0
+1
 1
 -1000
 
@@ -880,6 +916,77 @@ NIL
 NIL
 NIL
 1
+
+SLIDER
+557
+88
+728
+121
+wolf-gain-from-kill
+wolf-gain-from-kill
+0
+100
+10.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+557
+121
+728
+154
+wolf-energy-loss
+wolf-energy-loss
+0
+5
+1.0
+.5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+557
+154
+728
+187
+wolf-reproduce-energy
+wolf-reproduce-energy
+0
+100
+70.0
+5
+1
+NIL
+HORIZONTAL
+
+SLIDER
+557
+187
+728
+220
+wolf-reproduce-cost
+wolf-reproduce-cost
+0
+wolf-reproduce-energy / 2
+20.0
+5
+1
+NIL
+HORIZONTAL
+
+MONITOR
+1127
+261
+1246
+306
+Max Wolf Energy
+max [energy] of wolves
+0
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
