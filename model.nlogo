@@ -176,30 +176,22 @@ to setup
 end
 
 to go
+  ;; Stop the simulation if there are no sheep.
   if not any? sheep [ stop ]
-  ask sheep [
-    set current_state state
-    update-action-net
-    move-sheep
-    maybe-die-sheep
-  ]
 
-  ;; py:set "sheep_count" count sheep
-  ;; (py:run
-  ;; "assert( len(agent_genomes) == len(agent_preferences) == sheep_count )"
-  ;; )
-
-  if not any? wolves [
-    if always-have-wolves [
-      create-wolves 1 [
-        setxy round random-xcor round random-ycor
-        set heading one-of (list 0 90 180 270)
-        set energy random wolf-reproduce-energy - 1
-        set size 3
-        set color black
-      ]
+  ;; If we're out of wolves, potentially add new wolves
+  if not any? wolves and always-have-wolves [
+    create-wolves 1 [
+      setxy round random-xcor round random-ycor
+      set heading one-of (list 0 90 180 270)
+      set energy random wolf-reproduce-energy - 1
+      set size 3
+      set color black
     ]
   ]
+
+  ;; Move wolves first. If a sheep is dumb enough to have stayed where a
+  ;; wolf can bite it, then it should be bitten.
   ask wolves [
     ;; Perform our chosen action this step.
     act-wolves
@@ -207,7 +199,19 @@ to go
     ;; Die if we don't have enough energy.
     maybe-die-wolves
   ]
+
+  ;; Ask a sheep to act.
+  ask sheep [
+    set current_state state
+    update-action-net
+    move-sheep
+    maybe-die-sheep
+  ]
+
+  ;; Grow grass.
   ask patches [ grow-grass ]
+
+  ;; Step forwards.
   tick
 end
 
@@ -352,9 +356,9 @@ to act-wolves ;; Wolf procedure
   ;; If we have enough energy to reproduce, we should reproduce.
   if energy > wolf-reproduce-energy
   [
-    set energy energy - wolf-reproduce-energy
+    set energy energy - wolf-reproduce-cost
     hatch 1 [
-      set energy wolf-reproduce-energy
+      set energy wolf-reproduce-cost
       set heading one-of (list 0 90 180 270)
       fd 1
     ]
@@ -390,18 +394,30 @@ to act-wolves ;; Wolf procedure
 
     ;; If we're chasing, chase.
     [
-      ;; Get the closest sheep that we can see.
+      ;; Get the sheep that we can see.
       let sheep_in_cone sheep in-cone wolf-fov-cone-radius wolf-fov-cone-angle
-      let closest_sheep min-one-of sheep_in_cone [distance myself]
 
-      ifelse closest_sheep = nobody
+      ;; Choose our target
+      let target_sheep nobody
+      ifelse wolves-chase-weakest
+      ;; Chase the weakest, set target to closest weakest.
+      [
+        let closest_sheep sheep_in_cone with-min [distance myself]
+        set target_sheep min-one-of closest_sheep [energy]
+      ]
+      ;; Target a random close sheep.
+      [
+        set target_sheep min-one-of sheep_in_cone [distance myself]
+      ]
+
+      ifelse target_sheep = nobody
       ;; There's no here, move randomly.
       [ move-random-wolves ]
 
       ;; There's someone here, move towards them.
       [
         ;; towards returns [0, 360)
-        let angle_to towards closest_sheep
+        let angle_to towards target_sheep
 
         ;; This holds our desired direction of travel. We use this to
         ;; choose if we're going to move or turn.
@@ -491,8 +507,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-1
-1
+0
+0
 1
 ticks
 30.0
@@ -936,7 +952,7 @@ wolf-move-cost
 wolf-move-cost
 0
 5
-0.75
+1.25
 0.25
 1
 NIL
@@ -966,7 +982,7 @@ wolf-reproduce-cost
 wolf-reproduce-cost
 0
 wolf-reproduce-energy / 2
-75.0
+25.0
 1
 1
 NIL
@@ -1060,7 +1076,7 @@ SWITCH
 463
 always-have-wolves
 always-have-wolves
-1
+0
 1
 -1000
 
@@ -1073,7 +1089,7 @@ wolf-attack-cost
 wolf-attack-cost
 0
 5
-0.75
+1.25
 .25
 1
 NIL
@@ -1099,6 +1115,28 @@ preference-net-type
 preference-net-type
 "other-genome" "euclidean-distance" "absolute-difference" "squared-difference"
 1
+
+MONITOR
+1176
+112
+1339
+157
+NIL
+min [energy] of wolves
+0
+1
+11
+
+SWITCH
+1169
+186
+1386
+219
+wolves-chase-weakest
+wolves-chase-weakest
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
