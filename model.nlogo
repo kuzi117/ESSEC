@@ -96,9 +96,8 @@ to setup
     "import ESSEC"
     "agent_genomes = {}"
     "agent_preferences = {}"
-    "get_preference = lambda self, other: (np.tanh(np.dot(np.concatenate((agent_genomes[other]['evaluation_net'].flat, \\"
-                     "agent_genomes[other]['initial_action_net'].flat)).flat, agent_genomes[self]['preference_net']))[0] + 1) / 2."
-  )
+    "agent_to_genome = lambda agent: np.concatenate((agent_genomes[agent]['evaluation_net'].flat, agent_genomes[agent]['initial_action_net'].flat))"
+    )
 
   ;; setup the grass
   ask patches [ set pcolor green ]
@@ -114,6 +113,23 @@ to setup
     py:set "num_actions" 5
   ]
   py:set "len_state" 9
+
+  ifelse preference-net-type = "euclidean" [
+    py:run "compare_genomes = lambda self, other: np.sqrt(np.sum(np.square(agent_to_genome(self) - agent_to_genome(other))))"
+    py:set "len_processed_genomes" 1
+  ] [
+    ifelse sheep-always-eat [
+      py:set "len_processed_genomes" 9 * (4 + 1)
+    ] [
+      py:set "len_processed_genomes" 9 * (5 + 1)
+    ]
+    ifelse preference-net-type = "absolute" [
+      py:run "compare_genomes = lambda self, other: abs(agent_to_genome(self) - agent_to_genome(other))"
+    ] [
+      py:run "compare_genomes = lambda self, other: np.square(agent_to_genome(self) - agent_to_genome(other))"
+    ]
+  ]
+  py:run "get_preference = lambda self, other: np.tanh(np.dot(compare_genomes(self, other), agent_genomes[self]['preference_net'])[0] + 1) / 2"
   set-default-shape sheep "default"
   create-sheep sheep-initial-number  ;; create the sheep, then initialize their variables
   [
@@ -135,7 +151,7 @@ to setup
     (py:run
       "action_net = np.random.rand(len_state, num_actions) if random_initial_action_net else np.zeros((len_state, num_actions))"
       "evaluation_net = np.random.rand(len_state, 1)"
-      "preference_net = np.random.rand(len_state * (num_actions + 1), 1) if evolved_preference else np.zeros((len_state * (num_actions + 1), 1))"
+      "preference_net = np.random.rand(len_processed_genomes, 1) if evolved_preference else np.zeros((len_processed_genomes, 1))"
       "agent_genomes[id] = {'action_net': action_net, 'evaluation_net': evaluation_net, 'preference_net': preference_net}"
       "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
       "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -297,7 +313,7 @@ to maybe-reproduce-sheep
           "0.1 * np.random.rand(len_state, 1),\\"
 
           "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
-          "0.1 * np.random.rand(len_state * (num_actions + 1), 1) * ev_crossover}"
+          "0.1 * np.random.rand(len_processed_genomes, 1) * ev_crossover}"
 
           "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -315,6 +331,9 @@ to maybe-die-sheep
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
     set average_sheep_lifetime average_sheep_lifetime + delta
     py:set "dead_sheep" who
+    if count sheep = 1 [
+      py:run "print(agent_genomes[dead_sheep], agent_preferences[dead_sheep])"
+    ]
     (py:run
       "del agent_genomes[dead_sheep]"
       "del agent_preferences[dead_sheep]"
@@ -841,9 +860,9 @@ PENS
 
 SWITCH
 178
-496
+628
 368
-529
+661
 evolved-preference
 evolved-preference
 1
@@ -988,31 +1007,31 @@ max [energy] of sheep
 
 SWITCH
 178
-594
-368
-627
-wolves-chase-sheep
-wolves-chase-sheep
-0
-1
--1000
-
-SWITCH
-178
-430
-368
-463
-random-initial-action-net
-random-initial-action-net
-0
-1
--1000
-
-SWITCH
-178
 463
 368
 496
+wolves-chase-sheep
+wolves-chase-sheep
+0
+1
+-1000
+
+SWITCH
+178
+562
+368
+595
+random-initial-action-net
+random-initial-action-net
+0
+1
+-1000
+
+SWITCH
+178
+595
+368
+628
 evolved-initial-action-net
 evolved-initial-action-net
 0
@@ -1032,9 +1051,9 @@ sheep-always-eat
 
 SWITCH
 178
-627
+430
 368
-660
+463
 always-have-wolves
 always-have-wolves
 1
@@ -1058,14 +1077,24 @@ HORIZONTAL
 
 SWITCH
 178
-562
+496
 368
-595
+529
 wolves-always-eat
 wolves-always-eat
 1
 1
 -1000
+
+CHOOSER
+178
+661
+368
+706
+preference-net-type
+preference-net-type
+"euclidean" "absolute" "squared"
+0
 
 @#$#@#$#@
 ## WHAT IS IT?
