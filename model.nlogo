@@ -108,7 +108,7 @@ to setup
       [ set pcolor brown ]
   ]
 
-  ifelse always-eat [
+  ifelse sheep-always-eat [
     py:set "num_actions" 4
   ] [
     py:set "num_actions" 5
@@ -235,7 +235,7 @@ to move-sheep
   if random-float 1 < epsilon [
     set action random (length actions)
   ]
-  if always-eat [ eat-grass ]
+  if sheep-always-eat [ eat-grass ]
   ifelse action = 0 [ fd 1 ] [
     ifelse action = 1 [ rt 90 ] [
       ifelse action = 2 [ lt 90 ] [
@@ -834,9 +834,9 @@ PENS
 
 SWITCH
 178
-562
+529
 368
-595
+562
 evolved-preference
 evolved-preference
 1
@@ -981,11 +981,22 @@ max [energy] of sheep
 
 SWITCH
 178
-595
+562
 368
-628
+595
 wolves-chase-sheep
 wolves-chase-sheep
+0
+1
+-1000
+
+SWITCH
+178
+463
+368
+496
+random-initial-action-net
+random-initial-action-net
 0
 1
 -1000
@@ -995,17 +1006,6 @@ SWITCH
 496
 368
 529
-random-initial-action-net
-random-initial-action-net
-0
-1
--1000
-
-SWITCH
-178
-529
-368
-562
 evolved-initial-action-net
 evolved-initial-action-net
 0
@@ -1017,17 +1017,17 @@ SWITCH
 430
 368
 463
-always-eat
-always-eat
+sheep-always-eat
+sheep-always-eat
 1
 1
 -1000
 
 SWITCH
 178
-463
+595
 368
-496
+628
 always-have-wolves
 always-have-wolves
 0
