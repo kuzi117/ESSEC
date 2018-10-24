@@ -1,6 +1,6 @@
 extensions [
  py;
-  profiler;
+ profiler;
 ]
 
 breed [sheep a-sheep]
@@ -15,11 +15,9 @@ globals [
   num_sheep_dead
 ]
 
-;; add networks,
-
-to-report state ;; a-sheep
+to-report state ;; sheep procedure
   ;; let T ticks
-  let enrg energy / max-energy
+  let enrg energy / sheep-max-energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
   let P_s list 1.0 1.0  ;; Relative Position of Closest Sheep
@@ -27,32 +25,32 @@ to-report state ;; a-sheep
   let P_g list 1.0 1.0 ;; Relative Position of Closest Grass
   ;; let P_sid list 10 10 ;; Relative Position of Closest Sheep in danger
 
-  let sheep_in_cone sheep in-cone fov-cone-radius fov-cone-angle
+  let sheep_in_cone sheep in-cone sheep-fov-cone-radius sheep-fov-cone-angle
   set sheep_in_cone other sheep_in_cone ;; Other sheep in cone
   let closest_sheep min-one-of sheep_in_cone [distance myself]
   if closest_sheep != nobody  [
     ifelse distance closest_sheep != 0
-      [ set P_s list ((sin towards closest_sheep * distance closest_sheep) / (fov-cone-radius + 1))
-                     ((cos towards closest_sheep * distance closest_sheep) / (fov-cone-radius + 1))]
+      [ set P_s list ((sin towards closest_sheep * distance closest_sheep) / (sheep-fov-cone-radius + 1))
+                     ((cos towards closest_sheep * distance closest_sheep) / (sheep-fov-cone-radius + 1))]
       [ set P_s list 0 0 ]
   ]
 
 
-  let wolves_in_cone wolves in-cone fov-cone-radius fov-cone-angle
+  let wolves_in_cone wolves in-cone sheep-fov-cone-radius sheep-fov-cone-angle
   let closest_wolf min-one-of wolves_in_cone [distance myself]
   if closest_wolf != nobody [
     ifelse distance closest_wolf != 0
-      [ set P_w list ((sin towards closest_wolf * distance closest_wolf) / (fov-cone-radius + 1))
-                     ((cos towards closest_wolf * distance closest_wolf) / (fov-cone-radius + 1))]
+      [ set P_w list ((sin towards closest_wolf * distance closest_wolf) / (sheep-fov-cone-radius + 1))
+                     ((cos towards closest_wolf * distance closest_wolf) / (sheep-fov-cone-radius + 1))]
       [ set P_w list 0 0 ]
   ]
 
-  let grass_in_cone patches in-cone fov-cone-radius fov-cone-angle with [pcolor = green]
+  let grass_in_cone patches in-cone sheep-fov-cone-radius sheep-fov-cone-angle with [pcolor = green]
   let closest_grass min-one-of grass_in_cone [distance myself]
   if closest_grass != nobody [
     ifelse distance closest_grass != 0
-     [ set P_g list ((sin towards closest_grass * distance closest_grass) / (fov-cone-radius + 1))
-                    ((cos towards closest_grass * distance closest_grass) / (fov-cone-radius + 1))]
+     [ set P_g list ((sin towards closest_grass * distance closest_grass) / (sheep-fov-cone-radius + 1))
+                    ((cos towards closest_grass * distance closest_grass) / (sheep-fov-cone-radius + 1))]
      [ set P_g list 0 0  ]
    ]
 
@@ -104,13 +102,13 @@ to setup
       [ set pcolor brown ]
   ]
 
-  set-default-shape sheep "arrow"
-  create-sheep initial-number-sheep  ;; create the sheep, then initialize their variables
+  set-default-shape sheep "default"
+  create-sheep sheep-initial-number  ;; create the sheep, then initialize their variables
   [
     set size 3
     set color white
-    set energy random max-energy - min-energy;; --> random energy? <--
-    set energy energy + min-energy
+    set energy random sheep-max-energy - sheep-reproduce-energy;; --> random energy? <--
+    set energy energy + sheep-reproduce-energy
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
     set last_state []
@@ -120,7 +118,7 @@ to setup
     py:set "id" who
     set birth_tick 0
     set generation 0
-    ifelse test-RL [
+    ifelse random-initial-action-net [
       ifelse evolved-preference [
         (py:run
           "agent_genomes[id] = {'action_net': np.zeros((11, 5)), 'evaluation_net': np.random.rand(11, 1), 'preference_net': np.random.rand(66, 1)}"
@@ -155,12 +153,12 @@ to setup
     ]
   ]
 
-  set-default-shape wolves "arrow"
-  create-wolves initial-number-wolves  ;; create the wolves, then initialize their variables
+  set-default-shape wolves "default"
+  create-wolves wolves-initial-number ;; create the wolves, then initialize their variables
   [
     set size 3
     set color black
-    set energy random max-energy ;; --> random energy? <--
+    set energy random wolf-max-energy ;; --> random energy? <--
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
   ]
@@ -187,7 +185,7 @@ to go
     create-wolves 1 [
       setxy round random-xcor round random-ycor
       set heading one-of (list 0 90 180 270)
-      set energy random max-energy
+      set energy random wolf-max-energy
       set size 3
       set color black
     ]
@@ -211,62 +209,68 @@ to go
 end
 
 to move-wolf
-  let sheep_in_cone sheep in-cone wolf-fov-cone-radius wolf-fov-cone-angle
-  let closest_sheep min-one-of sheep_in_cone [distance myself]
+  ifelse wolves-chase-sheep [
+    let sheep_in_cone sheep in-cone wolf-fov-cone-radius wolf-fov-cone-angle
+    let closest_sheep min-one-of sheep_in_cone [distance myself]
 
-  ;; No closest sheep, move randomly.
-  ifelse closest_sheep = nobody
-  [
-    ;; Chance to turn
-    if random-float 1 < 0.25
+    ;; No closest sheep, move randomly.
+    ifelse closest_sheep = nobody
     [
-      ;; Turn left or right 50/50.
-      ifelse random-float 1 < 0.5
-      [ rt 90 ]
-      [ lt 90 ]
-    ]
-    ;; Move forwards always if we're moving randomly.
-    fd 1
-  ]
-  ;; Seen a sheep move towards it on a cardinal direction.
-  [
-    ;; If we're not on a sheep then we need to change heading and move.
-    let dist_to distance closest_sheep
-
-    if dist_to > 0
-    [
-      ;; towards returns [0, 360)
-      let angle_to towards closest_sheep
-
-      ;; We're going to cut the range [0, 360] into quadrants divided at
-      ;; 45 degree points such that we clamp the heading to a cardinal
-      ;; direction. Note that the vertical axes are not inclusive of their
-      ;; end points, so we prefer movement on the x axis if our target is
-      ;; directly on a diagonal.
-
-      ;; If the angle is in [0,45) or (315, 360) then we want to go up.
-      if angle_to < 45 or angle_to > 315
-      [set heading 0]
-
-      ;; If the angle is in [45, 135] we go right.
-      if angle_to >= 45 and angle_to <= 135
-      [set heading 90]
-
-      ;; If the angle is in (135, 225) we go down.
-      if angle_to > 135 and angle_to < 225
-      [set heading 180]
-
-      ;; If the angle is in [225, 315] we go left.
-      if angle_to >= 225 and angle_to <= 315
-      [set heading -90]
-
-      ;; Need to move now.
+      ;; Chance to turn
+      if random-float 1 < 0.25
+      [
+        ;; Turn left or right 50/50.
+        ifelse random-float 1 < 0.5
+        [ rt 90 ]
+        [ lt 90 ]
+      ]
+      ;; Move forwards always if we're moving randomly.
       fd 1
     ]
+    ;; Seen a sheep move towards it on a cardinal direction.
+    [
+      ;; If we're not on a sheep then we need to change heading and move.
+      let dist_to distance closest_sheep
+
+      if dist_to > 0
+      [
+        ;; towards returns [0, 360)
+        let angle_to towards closest_sheep
+
+        ;; We're going to cut the range [0, 360] into quadrants divided at
+        ;; 45 degree points such that we clamp the heading to a cardinal
+        ;; direction. Note that the vertical axes are not inclusive of their
+        ;; end points, so we prefer movement on the x axis if our target is
+        ;; directly on a diagonal.
+
+        ;; If the angle is in [0,45) or (315, 360) then we want to go up.
+        if angle_to < 45 or angle_to > 315
+        [set heading 0]
+
+        ;; If the angle is in [45, 135] we go right.
+        if angle_to >= 45 and angle_to <= 135
+        [set heading 90]
+
+        ;; If the angle is in (135, 225) we go down.
+        if angle_to > 135 and angle_to < 225
+        [set heading 180]
+
+        ;; If the angle is in [225, 315] we go left.
+        if angle_to >= 225 and angle_to <= 315
+        [set heading -90]
+
+        ;; Need to move now.
+        fd 1
+      ]
+    ]
+  ] [
+    ifelse random-float 1 < 0.5
+      [ rt 90 ] [ lt 90 ]
+    fd 1
   ]
 end
 
-to update-action-net
+to update-action-net  ;; sheep procedure
   if not empty? last_state [
     py:set "agent_last_state" last_state
     py:set "agent_state" current_state
@@ -293,7 +297,7 @@ to update-action-net
   ]
 end
 
-to move-sheep  ;; sheep procedure
+to move-sheep
   py:set "agent_id" who
   py:set "agent_state" current_state
   ;; show state
@@ -313,7 +317,7 @@ to move-sheep  ;; sheep procedure
       ifelse action = 1 [ rt 90 ] [
         ifelse action = 2 [ lt 90 ] [
           ifelse action = 3 [ eat-grass ] [
-            if action = 4 [ reproduce ]
+            if action = 4 [ maybe-reproduce-sheep ]
           ]
         ]
       ]
@@ -323,21 +327,17 @@ to move-sheep  ;; sheep procedure
     set last_action action
 end
 
-to eat-grass  ;; sheep procedure
+to eat-grass
   ;; sheep eat grass, turn the patch brown
   if pcolor = green [
     set pcolor brown
     set energy energy + sheep-gain-from-food  ;; sheep gain energy by eating
-    if energy > max-energy
-    [ set energy max-energy ]
+    if energy > sheep-max-energy
+    [ set energy sheep-max-energy ]
   ]
 end
 
-to reproduce-sheep  ;; sheep procedure
-  reproduce
-end
-
-to maybe-reproduce-wolves  ;; wolf procedure
+to maybe-reproduce-wolves
   if energy > wolf-reproduce-energy
   [
     set energy energy - wolf-reproduce-energy
@@ -349,26 +349,27 @@ to maybe-reproduce-wolves  ;; wolf procedure
   ]
 end
 
-to reproduce ;; turtle procedure
-  if energy > min-energy [
+to maybe-reproduce-sheep
+  if energy > sheep-reproduce-energy [
     if last_id_of_preferred_sheep_in_cone != -1 [
-      set energy (energy - reproduce-energy)
+      set energy (energy - sheep-reproduce-energy)
       py:set "parent_id" who
       let parent_gen generation
       ;; pick a partner
       py:set "partner_id" last_id_of_preferred_sheep_in_cone
       let partner_gen [generation] of turtle last_id_of_preferred_sheep_in_cone
       let max_parent_gen max (list parent_gen partner_gen)
+      ;; spawn
       hatch 1 [
         set heading one-of (list 0 90 180 270)
-        set energy reproduce-energy
+        set energy sheep-reproduce-energy
         fd 1
         py:set "id" who
         set birth_tick ticks
         set generation max_parent_gen + 1
         set reward_avg 0
         set reward_count 0
-        ifelse test-RL [ py:set "crossover" 0 ] [ py:set "crossover" 1 ]
+        ifelse evolved-initial-action-net [ py:set "crossover" 0 ] [ py:set "crossover" 1 ]
         ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['initial_action_net'] + 0.5 *  agent_genomes[partner_id]['initial_action_net'] + \\"
@@ -404,8 +405,7 @@ to catch-sheep  ;; wolf procedure
   ]
 end
 
-to maybe-die-sheep  ;; turtle procedure
-  ;; when energy dips below zero, die
+to maybe-die-sheep
   if energy < 0 [
     let lifetime ticks - birth_tick
     set num_sheep_dead (num_sheep_dead + 1)
@@ -436,13 +436,13 @@ to grow-grass  ;; patch procedure
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-11
+199
 10
-385
-385
+612
+424
 -1
 -1
-6.0
+6.64
 1
 20
 1
@@ -463,41 +463,41 @@ ticks
 30.0
 
 SLIDER
-385
+612
 55
-557
+784
 88
-initial-number-sheep
-initial-number-sheep
+sheep-initial-number
+sheep-initial-number
 0
 250
-250.0
+100.0
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 55
-728
+955
 88
-initial-number-wolves
-initial-number-wolves
+wolves-initial-number
+wolves-initial-number
 0
 250
-1.0
-5
+3.0
+1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-55
-385
-124
-418
-reset
+130
+10
+199
+43
+Reset
 setup
 NIL
 1
@@ -510,11 +510,11 @@ NIL
 1
 
 BUTTON
-193
-385
-262
-418
-loop
+130
+76
+199
+109
+Loop
 go
 T
 1
@@ -527,10 +527,10 @@ NIL
 0
 
 PLOT
-11
-451
-402
-594
+199
+424
+590
+567
 Populations
 Time
 NIL
@@ -547,74 +547,74 @@ PENS
 "Grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
-385
+612
 10
-463
+675
 55
-sheep
+Sheep
 count sheep
-3
+0
 1
 11
 
 MONITOR
-557
+784
 10
-635
+847
 55
-wolves
+Wolves
 count wolves
-3
+0
 1
 11
 
 MONITOR
-728
+955
 10
-806
+1026
 55
-grass / 4
+Grass / 4
 count patches with [ pcolor = green ] / 4
 0
 1
 11
 
 SLIDER
-728
+955
 55
-899
+1126
 88
 grass-regrowth-time
 grass-regrowth-time
 0
 1000
 200.0
-50
+25
 1
 NIL
 HORIZONTAL
 
 SLIDER
-385
+612
+187
+784
 220
-557
-253
-reproduce-energy
-reproduce-energy
+sheep-reproduce-cost
+sheep-reproduce-cost
 0
 100
 15.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-124
-385
-193
-418
-step
+130
+43
+199
+76
+Step
 go
 NIL
 1
@@ -627,12 +627,12 @@ NIL
 1
 
 SLIDER
-385
+612
 253
-557
+784
 286
-fov-cone-angle
-fov-cone-angle
+sheep-fov-cone-angle
+sheep-fov-cone-angle
 0
 360
 360.0
@@ -642,12 +642,12 @@ NIL
 HORIZONTAL
 
 SLIDER
-385
+612
 286
-557
+784
 319
-fov-cone-radius
-fov-cone-radius
+sheep-fov-cone-radius
+sheep-fov-cone-radius
 0
 60
 10.0
@@ -657,69 +657,69 @@ NIL
 HORIZONTAL
 
 SLIDER
-385
+612
 88
-557
+784
 121
 sheep-gain-from-food
 sheep-gain-from-food
 0
 100
 20.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-385
-187
-557
+612
 220
-max-energy
-max-energy
+784
+253
+sheep-max-energy
+sheep-max-energy
 0
-100
+250
 100.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-385
+612
 154
-557
+784
 187
-min-energy
-min-energy
+sheep-reproduce-energy
+sheep-reproduce-energy
 0
 100
 40.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 318
-728
+955
 351
 attack-damage
 attack-damage
 0
 100
 20.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-385
+612
 121
-557
+784
 154
 sheep-energy-loss
 sheep-energy-loss
@@ -732,9 +732,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 253
-728
+955
 286
 wolf-fov-cone-angle
 wolf-fov-cone-angle
@@ -747,9 +747,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-385
+612
 319
-557
+784
 352
 alpha
 alpha
@@ -762,24 +762,24 @@ NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 286
-728
+955
 319
 wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
 60
 5.0
-4
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-385
+612
 352
-557
+784
 385
 epsilon
 epsilon
@@ -791,22 +791,11 @@ epsilon
 NIL
 HORIZONTAL
 
-SWITCH
-72
-418
-167
-451
-test-RL
-test-RL
-1
-1
--1000
-
 PLOT
-402
-594
-793
-737
+590
+567
+981
+710
 Average Sheep Lifetime
 Sheep
 NIL
@@ -821,10 +810,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plotxy num_sheep_dead average_sheep_lifetime"
 
 PLOT
-11
-594
-402
-737
+199
+567
+590
+710
 Generational Populations
 Generation
 NIL
@@ -839,10 +828,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "histogram [generation] of sheep"
 
 SWITCH
-167
-418
-321
-451
+9
+358
+199
+391
 evolved-preference
 evolved-preference
 1
@@ -850,10 +839,10 @@ evolved-preference
 -1000
 
 PLOT
-401
-451
-792
-594
+589
+424
+980
+567
 Mean Moving Average of Sheep's Rewards
 Time
 NIL
@@ -872,10 +861,10 @@ PENS
 "Zero" 1.0 0 -7500403 true "" "plot 0"
 
 BUTTON
-262
-385
-339
-418
+130
+109
+199
+142
 Profiler
 setup                  ;; set up the model\nprofiler:start         ;; start profiling\nrepeat 30 [ go ]       ;; run something you want to measure\nprofiler:stop          ;; stop profiling\nprint profiler:report  ;; view the results\nprofiler:reset         ;; clear the data\n
 NIL
@@ -889,75 +878,134 @@ NIL
 1
 
 SLIDER
-557
+784
 88
-728
+955
 121
 wolf-gain-from-kill
 wolf-gain-from-kill
 0
 100
 10.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 121
-728
+955
 154
 wolf-energy-loss
 wolf-energy-loss
 0
 5
 1.0
-.5
+0.25
 1
 NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 154
-728
+955
 187
 wolf-reproduce-energy
 wolf-reproduce-energy
 0
 100
 70.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-557
+784
 187
-728
+955
 220
 wolf-reproduce-cost
 wolf-reproduce-cost
 0
 wolf-reproduce-energy / 2
 20.0
-5
+1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-1127
-261
-1246
-306
+847
+10
+955
+55
 Max Wolf Energy
 max [energy] of wolves
 0
 1
 11
+
+SLIDER
+784
+220
+956
+253
+wolf-max-energy
+wolf-max-energy
+0
+250
+100.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+675
+10
+784
+55
+Max Sheep Energy
+max [energy] of sheep
+0
+1
+11
+
+SWITCH
+9
+391
+199
+424
+wolves-chase-sheep
+wolves-chase-sheep
+0
+1
+-1000
+
+SWITCH
+9
+292
+199
+325
+random-initial-action-net
+random-initial-action-net
+0
+1
+-1000
+
+SWITCH
+9
+325
+199
+358
+evolved-initial-action-net
+evolved-initial-action-net
+0
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
