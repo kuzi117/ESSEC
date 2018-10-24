@@ -183,11 +183,15 @@ to go
 
   if not any? wolves [
     create-wolves 1 [
+      ;; Configure the agent in the world.
       setxy round random-xcor round random-ycor
       set heading one-of (list 0 90 180 270)
-      set energy random wolf-max-energy
       set size 3
       set color black
+
+      ;; Configure the agent state.
+      ;; Don't want to give them enough energy to reproduce instantly.
+      set energy random  wolf-reproduce-energy - 1
     ]
   ]
   ask wolves [
