@@ -114,7 +114,7 @@ to setup
   ]
   py:set "len_state" 9
 
-  ifelse preference-net-type = "euclidean" [
+  ifelse preference-net-type = "euclidean-distance" [
     py:run "compare_genomes = lambda self, other: np.sqrt(np.sum(np.square(agent_to_genome(self) - agent_to_genome(other))))"
     py:set "len_processed_genomes" 1
   ] [
@@ -123,10 +123,14 @@ to setup
     ] [
       py:set "len_processed_genomes" 9 * (5 + 1)
     ]
-    ifelse preference-net-type = "absolute" [
-      py:run "compare_genomes = lambda self, other: abs(agent_to_genome(self) - agent_to_genome(other))"
+    ifelse preference-net-type = "other-genome" [
+      py:run "compare_genomes = lambda self, other: agent_to_genome(other)"
     ] [
-      py:run "compare_genomes = lambda self, other: np.square(agent_to_genome(self) - agent_to_genome(other))"
+      ifelse preference-net-type = "absolute-difference" [
+        py:run "compare_genomes = lambda self, other: abs(agent_to_genome(self) - agent_to_genome(other))"
+      ] [
+        py:run "compare_genomes = lambda self, other: np.square(agent_to_genome(self) - agent_to_genome(other))"
+      ]
     ]
   ]
   py:run "get_preference = lambda self, other: np.tanh(np.dot(compare_genomes(self, other), agent_genomes[self]['preference_net'])[0] + 1) / 2"
@@ -865,7 +869,7 @@ SWITCH
 661
 evolved-preference
 evolved-preference
-1
+0
 1
 -1000
 
@@ -1093,8 +1097,8 @@ CHOOSER
 706
 preference-net-type
 preference-net-type
-"euclidean" "absolute" "squared"
-0
+"other-genome" "euclidean-distance" "absolute-difference" "squared-difference"
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
