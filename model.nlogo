@@ -384,7 +384,8 @@ to catch-sheep  ;; wolf procedure
       set energy (energy - attack-damage)
     ]
     if [energy] of prey <= 0 [
-      set energy energy + wolf-gain-from-kill
+      set energy min list (energy + wolf-gain-from-kill) wolf-max-energy
+
     ]
     ask prey [
       maybe-die-sheep
@@ -473,7 +474,7 @@ wolves-initial-number
 wolves-initial-number
 0
 250
-3.0
+10.0
 1
 1
 NIL
@@ -888,7 +889,7 @@ wolf-energy-loss
 wolf-energy-loss
 0
 5
-1.0
+0.0
 0.25
 1
 NIL
@@ -944,7 +945,7 @@ wolf-max-energy
 wolf-max-energy
 0
 250
-100.0
+45.0
 1
 1
 NIL
@@ -1001,7 +1002,7 @@ SWITCH
 418
 always-eat
 always-eat
-1
+0
 1
 -1000
 
