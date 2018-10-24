@@ -20,9 +20,9 @@ to-report state ;; sheep procedure
   let enrg energy / sheep-max-energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
-  let P_s list 1.0 1.0  ;; Relative Position of Closest Sheep
-  let P_w list 1.0 1.0 ;; Relative Position of Closest Wolf
-  let P_g list 1.0 1.0 ;; Relative Position of Closest Grass
+  let P_s list 0.0 1.0  ;; Relative Position of Closest Sheep
+  let P_w list 0.0 1.0 ;; Relative Position of Closest Wolf
+  let P_g list 0.0 1.0 ;; Relative Position of Closest Grass
   ;; let P_sid list 10 10 ;; Relative Position of Closest Sheep in danger
 
   let sheep_in_cone sheep in-cone sheep-fov-cone-radius sheep-fov-cone-angle
@@ -30,8 +30,9 @@ to-report state ;; sheep procedure
   let closest_sheep min-one-of sheep_in_cone [distance myself]
   if closest_sheep != nobody  [
     ifelse distance closest_sheep != 0
-      [ set P_s list ((sin towards closest_sheep * distance closest_sheep) / (sheep-fov-cone-radius + 1))
-                     ((cos towards closest_sheep * distance closest_sheep) / (sheep-fov-cone-radius + 1))]
+      ;;[ set P_s list ((sin (towards closest_sheep - heading) * distance closest_sheep) / (sheep-fov-cone-radius + 1))
+      ;;               ((cos (towards closest_sheep - heading) * distance closest_sheep) / (sheep-fov-cone-radius + 1))]
+      [ set P_s (list ((towards closest_sheep - heading) / 360) (distance closest_sheep / (sheep-fov-cone-radius + 1))) ]
       [ set P_s list 0 0 ]
   ]
 
@@ -40,8 +41,9 @@ to-report state ;; sheep procedure
   let closest_wolf min-one-of wolves_in_cone [distance myself]
   if closest_wolf != nobody [
     ifelse distance closest_wolf != 0
-      [ set P_w list ((sin towards closest_wolf * distance closest_wolf) / (sheep-fov-cone-radius + 1))
-                     ((cos towards closest_wolf * distance closest_wolf) / (sheep-fov-cone-radius + 1))]
+      ;;[ set P_w list ((sin (towards closest_wolf - heading) * distance closest_wolf) / (sheep-fov-cone-radius + 1))
+      ;;               ((cos (towards closest_wolf - heading) * distance closest_wolf) / (sheep-fov-cone-radius + 1))]
+      [ set P_w (list ((towards closest_wolf - heading) / 360) (distance closest_wolf / (sheep-fov-cone-radius + 1))) ]
       [ set P_w list 0 0 ]
   ]
 
@@ -49,8 +51,9 @@ to-report state ;; sheep procedure
   let closest_grass min-one-of grass_in_cone [distance myself]
   if closest_grass != nobody [
     ifelse distance closest_grass != 0
-     [ set P_g list ((sin towards closest_grass * distance closest_grass) / (sheep-fov-cone-radius + 1))
-                    ((cos towards closest_grass * distance closest_grass) / (sheep-fov-cone-radius + 1))]
+     ;; [ set P_g list ((sin (towards closest_grass - heading) * distance closest_grass) / (sheep-fov-cone-radius + 1))
+     ;;               ((cos (towards closest_grass - heading) * distance closest_grass) / (sheep-fov-cone-radius + 1))]
+     [ set P_g (list ((towards closest_grass - heading) / 360) (distance closest_grass / (sheep-fov-cone-radius + 1))) ]
      [ set P_g list 0 0  ]
    ]
 
@@ -74,8 +77,11 @@ to-report state ;; sheep procedure
     set max_pref py:runresult "max_pref"
     set last_id_of_preferred_sheep_in_cone py:runresult "prefs_info[np.random.choice(np.flatnonzero(np.array([item[1] for item in prefs_info]) == max_pref))][0]"
   ]
+
   ;; show (sentence D max_pref enrg P_a P_s P_w P_g)
-  report (sentence D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
+  ;; report (sentence D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
+  ;; show ( sentence 1 max_pref P_s P_w P_g )
+  report ( sentence 1 max_pref enrg P_s P_w P_g )
 end
 
 to setup
@@ -102,11 +108,6 @@ to setup
       [ set pcolor brown ]
   ]
 
-  ifelse always-eat [
-    py:set "num_actions" 4
-  ] [
-    py:set "num_actions" 5
-  ]
   set-default-shape sheep "default"
   create-sheep sheep-initial-number  ;; create the sheep, then initialize their variables
   [
@@ -123,17 +124,39 @@ to setup
     py:set "id" who
     set birth_tick 0
     set generation 0
-    py:set "random_initial_action_net" random-initial-action-net
-    py:set "evolved_preference" evolved-preference
-    (py:run
-      "action_net = np.random.rand(11, num_actions) if random_initial_action_net else np.zeros((11, num_actions))"
-      "evaluation_net = np.random.rand(11, 1)"
-      "preference_net = np.random.rand(11 * (num_actions + 1), 1) if evolved_preference else np.zeros((11 * (num_actions + 1), 1))"
-      "agent_genomes[id] = {'action_net': action_net, 'evaluation_net': evaluation_net, 'preference_net': preference_net}"
-      "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-      "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-      "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-    )
+    ifelse random-initial-action-net [
+      ifelse evolved-preference [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.zeros((9, 5)), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.random.rand(54, 1)}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ] [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.zeros((9, 5)), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.zeros((54, 1))}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+         )
+      ]
+    ] [
+      ifelse evolved-preference [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.random.rand(9, 5), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.random.rand(54, 1)}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ] [
+         (py:run
+          "agent_genomes[id] = {'action_net': np.random.rand(9, 5), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.zeros((54, 1))}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ]
+    ]
   ]
 
   set-default-shape wolves "default"
@@ -141,7 +164,7 @@ to setup
   [
     set size 3
     set color black
-    set energy random wolf-reproduce-energy - 1
+    set energy random wolf-max-energy ;; --> random energy? <--
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
   ]
@@ -166,21 +189,17 @@ to go
 
   if not any? wolves [
     create-wolves 1 [
-      ;; Configure the agent in the world.
       setxy round random-xcor round random-ycor
       set heading one-of (list 0 90 180 270)
+      set energy random wolf-max-energy
       set size 3
       set color black
-
-      ;; Configure the agent state.
-      ;; Don't want to give them enough energy to reproduce instantly.
-      set energy random  wolf-reproduce-energy - 1
     ]
   ]
   ask wolves [
     ;; Move wolves every turn and lose energy
     move-wolf
-    set energy energy - wolf-energy-loss
+    set energy energy - 0.5
 
     ;; If there's a sheep here, take a bite.
     catch-sheep
@@ -275,7 +294,7 @@ to update-action-net  ;; sheep procedure
       "max_q_val = np.max(q_vals_state)"
       "q_val_last_state_action = q_vals_last_state[last_action]"
       "err = td_error + 0.99 * max_q_val - q_val_last_state_action"
-      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 11 * err * np.array(agent_last_state)"
+      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 9 * err * np.array(agent_last_state)"
     )
 
     set last_reward py:runresult "td_error"
@@ -303,8 +322,8 @@ to move-sheep
     ifelse action = 0 [ fd 1 ] [
       ifelse action = 1 [ rt 90 ] [
         ifelse action = 2 [ lt 90 ] [
-          ifelse action = 3 [ maybe-reproduce-sheep ] [
-            if action = 4 [ eat-grass ]
+          ifelse action = 3 [ eat-grass ] [
+            if action = 4 [ maybe-reproduce-sheep ]
           ]
         ]
       ]
@@ -360,13 +379,13 @@ to maybe-reproduce-sheep
         ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['initial_action_net'] + 0.5 *  agent_genomes[partner_id]['initial_action_net'] + \\"
-          "0.1 * np.random.rand(11, num_actions) * crossover,\\"
+          "0.1 * np.random.rand(9, 5) * crossover,\\"
 
           "'evaluation_net': 0.5 * agent_genomes[parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + \\"
-          "0.1 * np.random.rand(11, 1),\\"
+          "0.1 * np.random.rand(9, 1),\\"
 
           "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
-          "0.1 * np.random.rand(11 * (num_actions + 1), 1) * ev_crossover}"
+          "0.1 * np.random.rand(54, 1) * ev_crossover}"
 
           "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -384,8 +403,7 @@ to catch-sheep  ;; wolf procedure
       set energy (energy - attack-damage)
     ]
     if [energy] of prey <= 0 [
-      set energy min list (energy + wolf-gain-from-kill) wolf-max-energy
-
+      set energy energy + wolf-gain-from-kill
     ]
     ask prey [
       maybe-die-sheep
@@ -424,13 +442,13 @@ to grow-grass  ;; patch procedure
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-197
+199
 10
-604
-418
+612
+424
 -1
 -1
-6.541
+6.64
 1
 20
 1
@@ -444,16 +462,16 @@ GRAPHICS-WINDOW
 60
 0
 60
-0
-0
+1
+1
 1
 ticks
 30.0
 
 SLIDER
-604
+612
 55
-776
+784
 88
 sheep-initial-number
 sheep-initial-number
@@ -466,24 +484,24 @@ NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 55
-947
+955
 88
 wolves-initial-number
 wolves-initial-number
 0
 250
-10.0
+1.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-128
+130
 10
-197
+199
 43
 Reset
 setup
@@ -498,9 +516,9 @@ NIL
 1
 
 BUTTON
-128
+130
 76
-197
+199
 109
 Loop
 go
@@ -515,10 +533,10 @@ NIL
 0
 
 PLOT
-197
-418
-588
-561
+199
+424
+590
+567
 Populations
 Time
 NIL
@@ -535,9 +553,9 @@ PENS
 "Grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
-604
+612
 10
-667
+675
 55
 Sheep
 count sheep
@@ -546,9 +564,9 @@ count sheep
 11
 
 MONITOR
-776
+784
 10
-839
+847
 55
 Wolves
 count wolves
@@ -557,9 +575,9 @@ count wolves
 11
 
 MONITOR
-947
+955
 10
-1018
+1026
 55
 Grass / 4
 count patches with [ pcolor = green ] / 4
@@ -568,9 +586,9 @@ count patches with [ pcolor = green ] / 4
 11
 
 SLIDER
-947
+955
 55
-1118
+1126
 88
 grass-regrowth-time
 grass-regrowth-time
@@ -583,9 +601,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 187
-776
+784
 220
 sheep-reproduce-cost
 sheep-reproduce-cost
@@ -598,9 +616,9 @@ NIL
 HORIZONTAL
 
 BUTTON
-128
+130
 43
-197
+199
 76
 Step
 go
@@ -615,24 +633,24 @@ NIL
 1
 
 SLIDER
-604
+612
 253
-776
+784
 286
 sheep-fov-cone-angle
 sheep-fov-cone-angle
 0
 360
-180.0
+360.0
 15
 1
 NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 286
-776
+784
 319
 sheep-fov-cone-radius
 sheep-fov-cone-radius
@@ -645,9 +663,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 88
-776
+784
 121
 sheep-gain-from-food
 sheep-gain-from-food
@@ -660,9 +678,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 220
-776
+784
 253
 sheep-max-energy
 sheep-max-energy
@@ -675,9 +693,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 154
-776
+784
 187
 sheep-reproduce-energy
 sheep-reproduce-energy
@@ -690,9 +708,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 318
-947
+955
 351
 attack-damage
 attack-damage
@@ -705,9 +723,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 121
-776
+784
 154
 sheep-energy-loss
 sheep-energy-loss
@@ -720,9 +738,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 253
-947
+955
 286
 wolf-fov-cone-angle
 wolf-fov-cone-angle
@@ -735,9 +753,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 319
-776
+784
 352
 alpha
 alpha
@@ -750,9 +768,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 286
-947
+955
 319
 wolf-fov-cone-radius
 wolf-fov-cone-radius
@@ -765,9 +783,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-604
+612
 352
-776
+784
 385
 epsilon
 epsilon
@@ -780,10 +798,10 @@ NIL
 HORIZONTAL
 
 PLOT
-588
-561
-979
-704
+590
+567
+981
+710
 Average Sheep Lifetime
 Sheep
 NIL
@@ -798,10 +816,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plotxy num_sheep_dead average_sheep_lifetime"
 
 PLOT
-197
-561
-588
-704
+199
+567
+590
+710
 Generational Populations
 Generation
 NIL
@@ -816,10 +834,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "histogram [generation] of sheep"
 
 SWITCH
-7
-319
-197
-352
+9
+358
+199
+391
 evolved-preference
 evolved-preference
 1
@@ -827,10 +845,10 @@ evolved-preference
 -1000
 
 PLOT
-587
-418
-978
-561
+589
+424
+980
+567
 Mean Moving Average of Sheep's Rewards
 Time
 NIL
@@ -849,9 +867,9 @@ PENS
 "Zero" 1.0 0 -7500403 true "" "plot 0"
 
 BUTTON
-128
+130
 109
-197
+199
 142
 Profiler
 setup                  ;; set up the model\nprofiler:start         ;; start profiling\nrepeat 30 [ go ]       ;; run something you want to measure\nprofiler:stop          ;; stop profiling\nprint profiler:report  ;; view the results\nprofiler:reset         ;; clear the data\n
@@ -866,9 +884,9 @@ NIL
 1
 
 SLIDER
-776
+784
 88
-947
+955
 121
 wolf-gain-from-kill
 wolf-gain-from-kill
@@ -881,24 +899,24 @@ NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 121
-947
+955
 154
 wolf-energy-loss
 wolf-energy-loss
 0
 5
-0.0
+1.0
 0.25
 1
 NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 154
-947
+955
 187
 wolf-reproduce-energy
 wolf-reproduce-energy
@@ -911,9 +929,9 @@ NIL
 HORIZONTAL
 
 SLIDER
-776
+784
 187
-947
+955
 220
 wolf-reproduce-cost
 wolf-reproduce-cost
@@ -926,9 +944,9 @@ NIL
 HORIZONTAL
 
 MONITOR
-839
+847
 10
-947
+955
 55
 Max Wolf Energy
 max [energy] of wolves
@@ -937,24 +955,24 @@ max [energy] of wolves
 11
 
 SLIDER
-776
+784
 220
-948
+956
 253
 wolf-max-energy
 wolf-max-energy
 0
 250
-45.0
+100.0
 1
 1
 NIL
 HORIZONTAL
 
 MONITOR
-667
+675
 10
-776
+784
 55
 Max Sheep Energy
 max [energy] of sheep
@@ -963,10 +981,10 @@ max [energy] of sheep
 11
 
 SWITCH
-7
-352
-197
-385
+9
+391
+199
+424
 wolves-chase-sheep
 wolves-chase-sheep
 0
@@ -974,10 +992,10 @@ wolves-chase-sheep
 -1000
 
 SWITCH
-7
-253
-197
-286
+9
+292
+199
+325
 random-initial-action-net
 random-initial-action-net
 0
@@ -985,23 +1003,12 @@ random-initial-action-net
 -1000
 
 SWITCH
-7
-286
-197
-319
+9
+325
+199
+358
 evolved-initial-action-net
 evolved-initial-action-net
-0
-1
--1000
-
-SWITCH
-7
-385
-197
-418
-always-eat
-always-eat
 0
 1
 -1000
