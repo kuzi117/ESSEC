@@ -283,12 +283,14 @@ end
 
 to eat-grass
   ;; sheep eat grass, turn the patch brown
-  if pcolor = green [
+  ifelse pcolor = green [
     set pcolor brown
     set energy energy + sheep-gain-from-food
     if energy > sheep-max-energy
     [ set energy sheep-max-energy ]
   ]
+  [ set energy energy - sheep-move-cost ]
+
 end
 
 to maybe-reproduce-sheep
@@ -507,8 +509,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -716,7 +718,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0
 100
-20.0
+15.0
 1
 1
 NIL
@@ -761,7 +763,7 @@ wolf-attack-damage
 wolf-attack-damage
 0
 100
-50.0
+40.0
 1
 1
 NIL
@@ -982,7 +984,7 @@ wolf-reproduce-cost
 wolf-reproduce-cost
 0
 wolf-reproduce-energy / 2
-25.0
+20.0
 1
 1
 NIL
@@ -1639,6 +1641,98 @@ repeat 75 [ go ]
       <value value="&quot;euclidean-distance&quot;"/>
       <value value="&quot;absolute-difference&quot;"/>
       <value value="&quot;squared-difference&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="random-initial-action-net">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-move-cost">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Wolf hyper parameters" repetitions="2" runMetricsEveryStep="false">
+    <setup>reset-timer
+setup</setup>
+    <go>go</go>
+    <timeLimit steps="500"/>
+    <metric>timer</metric>
+    <metric>ticks</metric>
+    <enumeratedValueSet variable="wolf-fov-cone-angle">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-move-cost">
+      <value value="1.25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-always-eat">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="evolved-preference">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-reproduce-cost">
+      <value value="15"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-always-eat">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-initial-number">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-attack-cost">
+      <value value="1.25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-fov-cone-radius">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-reproduce-energy">
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-fov-cone-radius">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="wolf-gain-from-kill" first="10" step="5" last="20"/>
+    <enumeratedValueSet variable="sheep-gain-from-food">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="grass-regrowth-time">
+      <value value="400"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="evolved-initial-action-net">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="wolf-reproduce-cost" first="20" step="5" last="30"/>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="always-have-wolves">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-chase-sheep">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-max-energy">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="wolf-attack-damage" first="20" step="10" last="50"/>
+    <enumeratedValueSet variable="alpha">
+      <value value="0.3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-reproduce-energy">
+      <value value="150"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-fov-cone-angle">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-initial-number">
+      <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-chase-weakest">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-max-energy">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="preference-net-type">
+      <value value="&quot;euclidean-distance&quot;"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="random-initial-action-net">
       <value value="true"/>
