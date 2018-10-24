@@ -349,7 +349,7 @@ to act-wolves ;; Wolf procedure
     ask lowest_sheep [ maybe-die-sheep ]
 
     ;; Don't act in another way
-    stop
+    if not wolves-always-eat [ stop ]
   ]
 
   ;; If there's no sheep we need to move.
@@ -1048,6 +1048,17 @@ wolf-energy-loss-attack
 1
 NIL
 HORIZONTAL
+
+SWITCH
+178
+628
+368
+661
+wolves-always-eat
+wolves-always-eat
+1
+1
+-1000
 
 @#$#@#$#@
 ## WHAT IS IT?
