@@ -177,7 +177,11 @@ end
 
 to go
   ;; Stop the simulation if there are no sheep.
-  if not any? sheep [ stop ]
+  if not any? sheep
+  [
+    export-all-plots (word "results " date-and-time ".csv")
+    stop
+  ]
 
   ;; If we're out of wolves, potentially add new wolves
   if not any? wolves and always-have-wolves [
@@ -1724,6 +1728,103 @@ setup</setup>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolves-initial-number">
       <value value="2"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-chase-weakest">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-max-energy">
+      <value value="200"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="preference-net-type">
+      <value value="&quot;euclidean-distance&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="random-initial-action-net">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-move-cost">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="runs" repetitions="10" runMetricsEveryStep="true">
+    <setup>reset-timer
+setup</setup>
+    <go>go</go>
+    <timeLimit steps="1000"/>
+    <metric>timer</metric>
+    <enumeratedValueSet variable="wolf-fov-cone-angle">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-move-cost">
+      <value value="1.25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-always-eat">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="evolved-preference">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-always-eat">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-attack-cost">
+      <value value="1.25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-initial-number">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-reproduce-cost">
+      <value value="15"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-fov-cone-radius">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-fov-cone-radius">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-gain-from-kill">
+      <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-reproduce-energy">
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-gain-from-food">
+      <value value="15"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="grass-regrowth-time">
+      <value value="400"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="evolved-initial-action-net">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-reproduce-cost">
+      <value value="25"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="epsilon">
+      <value value="0.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-chase-sheep">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-max-energy">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="always-have-wolves">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-attack-damage">
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="alpha">
+      <value value="0.3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-reproduce-energy">
+      <value value="150"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-fov-cone-angle">
+      <value value="180"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-initial-number">
+      <value value="1"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolves-chase-weakest">
       <value value="true"/>
