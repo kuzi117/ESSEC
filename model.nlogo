@@ -141,7 +141,7 @@ to setup
   [
     set size 3
     set color black
-    set energy random wolf-max-energy ;; --> random energy? <--
+    set energy random wolf-reproduce-energy - 1
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
   ]
@@ -180,7 +180,7 @@ to go
   ask wolves [
     ;; Move wolves every turn and lose energy
     move-wolf
-    set energy energy - 0.5
+    set energy energy - wolf-energy-loss
 
     ;; If there's a sheep here, take a bite.
     catch-sheep
@@ -444,8 +444,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-1
-1
+0
+0
 1
 ticks
 30.0
