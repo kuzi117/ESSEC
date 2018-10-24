@@ -25,7 +25,7 @@ def initStepPlot(n):
 windowQ = None
 
 # Global average of average values.
-avg = None 
+avg = None
 stepCount = None
 
 def addStepRewards(stepReward):
@@ -36,7 +36,7 @@ def addStepRewards(stepReward):
   if avg is not None and stepCount is not None:
     # Increment step count.
     stepCount += 1
-    
+
     # Update moving average.
     avg = avg + (sum(stepReward) - avg) / stepCount
   else:
@@ -57,7 +57,7 @@ def addStepRewards(stepReward):
   # Set up the queue, skipping the first iteration.
   else:
       windowQ = []
-  
+
 
 def getWindowRewardAvg():
   # We already have the sum and count tracked when maintaining the queue. Just
@@ -67,5 +67,3 @@ def getWindowRewardAvg():
 def getAllRewardAvg():
   # The rolling average is already computed when adding step info. Just return.
   return avg if stepCount != None and stepCount > 0 else 0
-
-print('Loaded ESSEC python module.')

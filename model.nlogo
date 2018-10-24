@@ -20,9 +20,9 @@ to-report state ;; sheep procedure
   let enrg energy / sheep-max-energy
   let D heading / 360.
   let P_a (list (xcor / world-width) (ycor / world-height)) ;; Global Position of Agent
-  let P_s list 1.0 1.0  ;; Relative Position of Closest Sheep
-  let P_w list 1.0 1.0 ;; Relative Position of Closest Wolf
-  let P_g list 1.0 1.0 ;; Relative Position of Closest Grass
+  let P_s list 0.0 1.0  ;; Relative Position of Closest Sheep
+  let P_w list 0.0 1.0 ;; Relative Position of Closest Wolf
+  let P_g list 0.0 1.0 ;; Relative Position of Closest Grass
   ;; let P_sid list 10 10 ;; Relative Position of Closest Sheep in danger
 
   let sheep_in_cone sheep in-cone sheep-fov-cone-radius sheep-fov-cone-angle
@@ -30,8 +30,9 @@ to-report state ;; sheep procedure
   let closest_sheep min-one-of sheep_in_cone [distance myself]
   if closest_sheep != nobody  [
     ifelse distance closest_sheep != 0
-      [ set P_s list ((sin towards closest_sheep * distance closest_sheep) / (sheep-fov-cone-radius + 1))
-                     ((cos towards closest_sheep * distance closest_sheep) / (sheep-fov-cone-radius + 1))]
+      ;;[ set P_s list ((sin (towards closest_sheep - heading) * distance closest_sheep) / (sheep-fov-cone-radius + 1))
+      ;;               ((cos (towards closest_sheep - heading) * distance closest_sheep) / (sheep-fov-cone-radius + 1))]
+      [ set P_s (list ((towards closest_sheep - heading) / 360) (distance closest_sheep / (sheep-fov-cone-radius + 1))) ]
       [ set P_s list 0 0 ]
   ]
 
@@ -40,8 +41,9 @@ to-report state ;; sheep procedure
   let closest_wolf min-one-of wolves_in_cone [distance myself]
   if closest_wolf != nobody [
     ifelse distance closest_wolf != 0
-      [ set P_w list ((sin towards closest_wolf * distance closest_wolf) / (sheep-fov-cone-radius + 1))
-                     ((cos towards closest_wolf * distance closest_wolf) / (sheep-fov-cone-radius + 1))]
+      ;;[ set P_w list ((sin (towards closest_wolf - heading) * distance closest_wolf) / (sheep-fov-cone-radius + 1))
+      ;;               ((cos (towards closest_wolf - heading) * distance closest_wolf) / (sheep-fov-cone-radius + 1))]
+      [ set P_w (list ((towards closest_wolf - heading) / 360) (distance closest_wolf / (sheep-fov-cone-radius + 1))) ]
       [ set P_w list 0 0 ]
   ]
 
@@ -49,8 +51,9 @@ to-report state ;; sheep procedure
   let closest_grass min-one-of grass_in_cone [distance myself]
   if closest_grass != nobody [
     ifelse distance closest_grass != 0
-     [ set P_g list ((sin towards closest_grass * distance closest_grass) / (sheep-fov-cone-radius + 1))
-                    ((cos towards closest_grass * distance closest_grass) / (sheep-fov-cone-radius + 1))]
+     ;; [ set P_g list ((sin (towards closest_grass - heading) * distance closest_grass) / (sheep-fov-cone-radius + 1))
+     ;;               ((cos (towards closest_grass - heading) * distance closest_grass) / (sheep-fov-cone-radius + 1))]
+     [ set P_g (list ((towards closest_grass - heading) / 360) (distance closest_grass / (sheep-fov-cone-radius + 1))) ]
      [ set P_g list 0 0  ]
    ]
 
@@ -74,8 +77,11 @@ to-report state ;; sheep procedure
     set max_pref py:runresult "max_pref"
     set last_id_of_preferred_sheep_in_cone py:runresult "prefs_info[np.random.choice(np.flatnonzero(np.array([item[1] for item in prefs_info]) == max_pref))][0]"
   ]
+
   ;; show (sentence D max_pref enrg P_a P_s P_w P_g)
-  report (sentence D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
+  ;; report (sentence D max_pref enrg P_a P_s P_w P_g) ;;P_sid)
+  ;; show ( sentence 1 max_pref P_s P_w P_g )
+  report ( sentence 1 max_pref enrg P_s P_w P_g )
 end
 
 to setup
@@ -102,11 +108,6 @@ to setup
       [ set pcolor brown ]
   ]
 
-  ifelse always-eat [
-    py:set "num_actions" 4
-  ] [
-    py:set "num_actions" 5
-  ]
   set-default-shape sheep "default"
   create-sheep sheep-initial-number  ;; create the sheep, then initialize their variables
   [
@@ -123,17 +124,39 @@ to setup
     py:set "id" who
     set birth_tick 0
     set generation 0
-    py:set "random_initial_action_net" random-initial-action-net
-    py:set "evolved_preference" evolved-preference
-    (py:run
-      "action_net = np.random.rand(11, num_actions) if random_initial_action_net else np.zeros((11, num_actions))"
-      "evaluation_net = np.random.rand(11, 1)"
-      "preference_net = np.random.rand(11 * (num_actions + 1), 1) if evolved_preference else np.zeros((11 * (num_actions + 1), 1))"
-      "agent_genomes[id] = {'action_net': action_net, 'evaluation_net': evaluation_net, 'preference_net': preference_net}"
-      "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-      "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-      "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-    )
+    ifelse random-initial-action-net [
+      ifelse evolved-preference [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.zeros((9, 5)), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.random.rand(54, 1)}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ] [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.zeros((9, 5)), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.zeros((54, 1))}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+         )
+      ]
+    ] [
+      ifelse evolved-preference [
+        (py:run
+          "agent_genomes[id] = {'action_net': np.random.rand(9, 5), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.random.rand(54, 1)}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ] [
+         (py:run
+          "agent_genomes[id] = {'action_net': np.random.rand(9, 5), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.zeros((54, 1))}"
+          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+        )
+      ]
+    ]
   ]
 
   set-default-shape wolves "default"
@@ -167,15 +190,11 @@ to go
   if not any? wolves [
     if always-have-wolves [
       create-wolves 1 [
-        ;; Configure the agent in the world.
         setxy round random-xcor round random-ycor
         set heading one-of (list 0 90 180 270)
+        set energy random wolf-max-energy
         set size 3
         set color black
-
-        ;; Configure the agent state.
-        ;; Don't want to give them enough energy to reproduce instantly.
-        set energy random  wolf-reproduce-energy - 1
       ]
     ]
   ]
@@ -277,7 +296,7 @@ to update-action-net  ;; sheep procedure
       "max_q_val = np.max(q_vals_state)"
       "q_val_last_state_action = q_vals_last_state[last_action]"
       "err = td_error + 0.99 * max_q_val - q_val_last_state_action"
-      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 11 * err * np.array(agent_last_state)"
+      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 9 * err * np.array(agent_last_state)"
     )
 
     set last_reward py:runresult "td_error"
@@ -305,8 +324,8 @@ to move-sheep
     ifelse action = 0 [ fd 1 ] [
       ifelse action = 1 [ rt 90 ] [
         ifelse action = 2 [ lt 90 ] [
-          ifelse action = 3 [ maybe-reproduce-sheep ] [
-            if action = 4 [ eat-grass ]
+          ifelse action = 3 [ eat-grass ] [
+            if action = 4 [ maybe-reproduce-sheep ]
           ]
         ]
       ]
@@ -362,13 +381,13 @@ to maybe-reproduce-sheep
         ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['initial_action_net'] + 0.5 *  agent_genomes[partner_id]['initial_action_net'] + \\"
-          "0.1 * np.random.rand(11, num_actions) * crossover,\\"
+          "0.1 * np.random.rand(9, 5) * crossover,\\"
 
           "'evaluation_net': 0.5 * agent_genomes[parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + \\"
-          "0.1 * np.random.rand(11, 1),\\"
+          "0.1 * np.random.rand(9, 1),\\"
 
           "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
-          "0.1 * np.random.rand(11 * (num_actions + 1), 1) * ev_crossover}"
+          "0.1 * np.random.rand(54, 1) * ev_crossover}"
 
           "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -386,8 +405,7 @@ to catch-sheep  ;; wolf procedure
       set energy (energy - attack-damage)
     ]
     if [energy] of prey <= 0 [
-      set energy min list (energy + wolf-gain-from-kill) wolf-max-energy
-
+      set energy energy + wolf-gain-from-kill
     ]
     ask prey [
       maybe-die-sheep
@@ -625,7 +643,7 @@ sheep-fov-cone-angle
 sheep-fov-cone-angle
 0
 360
-180.0
+360.0
 15
 1
 NIL
@@ -891,7 +909,7 @@ wolf-energy-loss
 wolf-energy-loss
 0
 5
-0.0
+1.0
 0.25
 1
 NIL
@@ -947,7 +965,7 @@ wolf-max-energy
 wolf-max-energy
 0
 250
-45.0
+100.0
 1
 1
 NIL
