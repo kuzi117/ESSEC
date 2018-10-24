@@ -185,7 +185,7 @@ to go
   ask wolves [
     ;; Move wolves every turn and lose energy
     move-wolf
-    set energy energy - 0.5
+    set energy energy - wolf-energy-loss
 
     ;; If there's a sheep here, take a bite.
     catch-sheep
@@ -627,7 +627,7 @@ sheep-fov-cone-angle
 sheep-fov-cone-angle
 0
 360
-360.0
+180.0
 15
 1
 NIL
