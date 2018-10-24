@@ -507,8 +507,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-1
-1
+0
+0
 1
 ticks
 30.0
@@ -653,7 +653,7 @@ SLIDER
 sheep-reproduce-cost
 sheep-reproduce-cost
 0
-100
+sheep-reproduce-energy
 15.0
 1
 1
