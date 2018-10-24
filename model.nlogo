@@ -304,19 +304,19 @@ to move-sheep
   if random-float 1 < epsilon [
     set action random (length actions)
   ]
-
-    ifelse action = 0 [ fd 1 ] [
-      ifelse action = 1 [ rt 90 ] [
-        ifelse action = 2 [ lt 90 ] [
-          ifelse action = 3 [ maybe-reproduce-sheep ] [
-            if action = 4 [ eat-grass ]
-          ]
+  if always-eat [ eat-grass ]
+  ifelse action = 0 [ fd 1 ] [
+    ifelse action = 1 [ rt 90 ] [
+      ifelse action = 2 [ lt 90 ] [
+        ifelse action = 3 [ maybe-reproduce-sheep ] [
+          if action = 4 [ eat-grass ]
         ]
       ]
     ]
+  ]
 
-    set last_state current_state
-    set last_action action
+  set last_state current_state
+  set last_action action
 end
 
 to eat-grass
