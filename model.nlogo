@@ -507,8 +507,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -639,7 +639,7 @@ grass-regrowth-time
 grass-regrowth-time
 0
 1000
-250.0
+400.0
 25
 1
 NIL
@@ -761,7 +761,7 @@ wolf-attack-damage
 wolf-attack-damage
 0
 100
-20.0
+50.0
 1
 1
 NIL
