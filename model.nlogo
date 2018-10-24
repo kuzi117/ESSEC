@@ -178,18 +178,11 @@ to go
     ]
   ]
   ask wolves [
-    ;; Move wolves every turn and lose energy
-    move-wolf
-    set energy energy - wolf-energy-loss
-
-    ;; If there's a sheep here, take a bite.
-    catch-sheep
+    ;; Perform our chosen action this step.
+    act-wolves
 
     ;; Die if we don't have enough energy.
     maybe-die-wolves
-
-    ;; Reproduce if we have too much energy.
-    maybe-reproduce-wolves
   ]
   ask patches [ grow-grass ]
   tick
@@ -381,11 +374,10 @@ to catch-sheep  ;; wolf procedure
   let prey one-of sheep-here
   if prey != nobody [
     ask prey [
-      set energy (energy - attack-damage)
+      set energy (energy - wolf-attack-damage)
     ]
     if [energy] of prey <= 0 [
-      set energy min list (energy + wolf-gain-from-kill) wolf-max-energy
-
+      set energy energy + wolf-gain-from-kill
     ]
     ask prey [
       maybe-die-sheep
@@ -406,6 +398,115 @@ to maybe-die-sheep
     )
     die
   ]
+end
+
+;; This is all of the wolves' action policy. We prioritise actions
+;; in this order: reproduce > attack > turn > move.
+to act-wolves ;; Wolf procedure
+  ;; If we have enough energy to reproduce, we should reproduce.
+  if energy > wolf-reproduce-energy
+  [
+    set energy energy - wolf-reproduce-energy
+    hatch 1 [
+      set energy wolf-reproduce-energy
+      set heading one-of (list 0 90 180 270)
+      fd 1
+    ]
+    stop
+  ]
+
+  ;; If there's a sheep in this tile we should attack.
+  ifelse count sheep-here != 0
+  [
+    ;; Select lowest energy sheep.
+    let lowest_sheep min-one-of sheep-here [energy]
+
+    ;; "Attack" it by reducing the sheeps energy while costing us energy.
+    ask lowest_sheep [ set energy energy - wolf-attack-damage ]
+    set energy energy - wolf-energy-loss-attack
+
+    ;; Feed ourselves if we killed it.
+    if [energy] of lowest_sheep <= 0
+    [ set energy min list wolf-max-energy (energy + wolf-gain-from-kill) ]
+
+    ;; Ask the sheep to maybe die.
+    ask lowest_sheep [ maybe-die-sheep ]
+
+    ;; Don't act in another way
+    stop
+  ]
+
+  ;; If there's no sheep we need to move.
+  [
+    ifelse not wolves-chase-sheep
+    ;; If we're not chasing, move randomly.
+    [ move-random-wolves ]
+
+    ;; If we're chasing, chase.
+    [
+      ;; Get the closest sheep that we can see.
+      let sheep_in_cone sheep in-cone wolf-fov-cone-radius wolf-fov-cone-angle
+      let closest_sheep min-one-of sheep_in_cone [distance myself]
+
+      ifelse closest_sheep = nobody
+      ;; There's no here, move randomly.
+      [ move-random-wolves ]
+
+      ;; There's someone here, move towards them.
+      [
+        ;; towards returns [0, 360)
+        let angle_to towards closest_sheep
+
+        ;; This holds our desired direction of travel. We use this to
+        ;; choose if we're going to move or turn.
+        let new_heading 0
+
+        ;; We're going to cut the range [0, 360] into quadrants divided at
+        ;; 45 degree points such that we clamp the heading to a cardinal
+        ;; direction. Note that the vertical axes are not inclusive of their
+        ;; end points, so we prefer movement on the x axis if our target is
+        ;; directly on a diagonal.
+
+        ;; If the angle is in [0,45) or (315, 360) then we want to go up.
+        if angle_to < 45 or angle_to > 315
+        [set new_heading 0]
+
+        ;; If the angle is in [45, 135] we go right.
+        if angle_to >= 45 and angle_to <= 135
+        [set new_heading 90]
+
+        ;; If the angle is in (135, 225) we go down.
+        if angle_to > 135 and angle_to < 225
+        [set new_heading 180]
+
+        ;; If the angle is in [225, 315] we go left.
+        if angle_to >= 225 and angle_to <= 315
+        [set new_heading 270]
+
+        ;; Now check if we're already facing in this direction. If we are, we
+        ;; should move, if we aren't then we turn.
+        ifelse heading = new_heading
+        [ fd 1 ]
+        [ set heading new_heading ]
+      ]
+    ]
+
+    ;; Always cost ourselves the movement cost.
+    set energy energy - wolf-energy-loss-move
+  ]
+end
+
+;; Randomly moves or turns. Does not spend energy.
+to move-random-wolves
+  ;; 50/50 chance to turn or move.
+  ifelse random-float 1 < 0.5
+  [
+    ;; 50/50 chance to turn left or right.
+    ifelse random-float 1 < 0.5
+    [ rt 90 ]
+    [ lt 90 ]
+  ]
+  [ fd 1 ]
 end
 
 to maybe-die-wolves
@@ -444,8 +545,8 @@ GRAPHICS-WINDOW
 60
 0
 60
-0
-0
+1
+1
 1
 ticks
 30.0
@@ -474,7 +575,7 @@ wolves-initial-number
 wolves-initial-number
 0
 250
-10.0
+1.0
 1
 1
 NIL
@@ -694,8 +795,8 @@ SLIDER
 318
 947
 351
-attack-damage
-attack-damage
+wolf-attack-damage
+wolf-attack-damage
 0
 100
 20.0
@@ -827,10 +928,10 @@ evolved-preference
 -1000
 
 PLOT
-587
+979
 418
-978
-561
+1760
+704
 Mean Moving Average of Sheep's Rewards
 Time
 NIL
@@ -885,11 +986,11 @@ SLIDER
 121
 947
 154
-wolf-energy-loss
-wolf-energy-loss
+wolf-energy-loss-move
+wolf-energy-loss-move
 0
 5
-0.0
+1.0
 0.25
 1
 NIL
@@ -939,13 +1040,13 @@ max [energy] of wolves
 SLIDER
 776
 220
-948
+947
 253
 wolf-max-energy
 wolf-max-energy
 0
 250
-45.0
+100.0
 1
 1
 NIL
@@ -1002,9 +1103,24 @@ SWITCH
 418
 always-eat
 always-eat
-0
+1
 1
 -1000
+
+SLIDER
+947
+121
+1118
+154
+wolf-energy-loss-attack
+wolf-energy-loss-attack
+0
+5
+1.5
+.25
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
