@@ -161,8 +161,6 @@ to go
     set current_state state
     update-action-net
     move-sheep
-    ;; sheep always loose 0.5 units of energy each tick
-    set energy energy - sheep-energy-loss
     maybe-die-sheep
   ]
 
@@ -236,11 +234,20 @@ to move-sheep
     set action random (length actions)
   ]
   if sheep-always-eat [ eat-grass ]
-  ifelse action = 0 [ fd 1 ] [
-    ifelse action = 1 [ rt 90 ] [
-      ifelse action = 2 [ lt 90 ] [
-        ifelse action = 3 [ maybe-reproduce-sheep ] [
-          if action = 4 [ eat-grass ]
+  ifelse action = 0 [
+    fd 1
+    set energy energy - sheep-move-cost
+  ] [ ifelse action = 1 [
+      rt 90
+      set energy energy - sheep-move-cost
+    ] [ ifelse action = 2 [
+        lt 90
+        set energy energy - sheep-move-cost
+      ] [ ifelse action = 3 [
+          maybe-reproduce-sheep
+        ] [ if action = 4 [
+            eat-grass
+          ]
         ]
       ]
     ]
@@ -254,7 +261,7 @@ to eat-grass
   ;; sheep eat grass, turn the patch brown
   if pcolor = green [
     set pcolor brown
-    set energy energy + sheep-gain-from-food  ;; sheep gain energy by eating
+    set energy energy + sheep-gain-from-food
     if energy > sheep-max-energy
     [ set energy sheep-max-energy ]
   ]
@@ -339,7 +346,7 @@ to act-wolves ;; Wolf procedure
 
     ;; "Attack" it by reducing the sheeps energy while costing us energy.
     ask lowest_sheep [ set energy energy - wolf-attack-damage ]
-    set energy energy - wolf-energy-loss-attack
+    set energy energy - wolf-attack-cost
 
     ;; Feed ourselves if we killed it.
     if [energy] of lowest_sheep <= 0
@@ -408,7 +415,7 @@ to act-wolves ;; Wolf procedure
     ]
 
     ;; Always cost ourselves the movement cost.
-    set energy energy - wolf-energy-loss-move
+    set energy energy - wolf-move-cost
   ]
 end
 
@@ -726,8 +733,8 @@ SLIDER
 121
 178
 154
-sheep-energy-loss
-sheep-energy-loss
+sheep-move-cost
+sheep-move-cost
 0
 5
 0.5
@@ -834,9 +841,9 @@ PENS
 
 SWITCH
 178
-529
+496
 368
-562
+529
 evolved-preference
 evolved-preference
 1
@@ -902,11 +909,11 @@ SLIDER
 496
 178
 529
-wolf-energy-loss-move
-wolf-energy-loss-move
+wolf-move-cost
+wolf-move-cost
 0
 5
-2.0
+0.75
 0.25
 1
 NIL
@@ -981,33 +988,11 @@ max [energy] of sheep
 
 SWITCH
 178
-562
+594
 368
-595
+627
 wolves-chase-sheep
 wolves-chase-sheep
-0
-1
--1000
-
-SWITCH
-178
-463
-368
-496
-random-initial-action-net
-random-initial-action-net
-0
-1
--1000
-
-SWITCH
-178
-496
-368
-529
-evolved-initial-action-net
-evolved-initial-action-net
 0
 1
 -1000
@@ -1017,6 +1002,28 @@ SWITCH
 430
 368
 463
+random-initial-action-net
+random-initial-action-net
+0
+1
+-1000
+
+SWITCH
+178
+463
+368
+496
+evolved-initial-action-net
+evolved-initial-action-net
+0
+1
+-1000
+
+SWITCH
+178
+529
+368
+562
 sheep-always-eat
 sheep-always-eat
 1
@@ -1025,12 +1032,12 @@ sheep-always-eat
 
 SWITCH
 178
-595
+627
 368
-628
+660
 always-have-wolves
 always-have-wolves
-0
+1
 1
 -1000
 
@@ -1039,11 +1046,11 @@ SLIDER
 529
 178
 562
-wolf-energy-loss-attack
-wolf-energy-loss-attack
+wolf-attack-cost
+wolf-attack-cost
 0
 5
-1.5
+0.75
 .25
 1
 NIL
@@ -1051,9 +1058,9 @@ HORIZONTAL
 
 SWITCH
 178
-628
+562
 368
-661
+595
 wolves-always-eat
 wolves-always-eat
 1
