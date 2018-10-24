@@ -108,6 +108,12 @@ to setup
       [ set pcolor brown ]
   ]
 
+  ifelse always-eat [
+    py:set "num_actions" 4
+  ] [
+    py:set "num_actions" 5
+  ]
+  py:set "len_state" 9
   set-default-shape sheep "default"
   create-sheep sheep-initial-number  ;; create the sheep, then initialize their variables
   [
@@ -124,39 +130,17 @@ to setup
     py:set "id" who
     set birth_tick 0
     set generation 0
-    ifelse random-initial-action-net [
-      ifelse evolved-preference [
-        (py:run
-          "agent_genomes[id] = {'action_net': np.zeros((9, 5)), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.random.rand(54, 1)}"
-          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-        )
-      ] [
-        (py:run
-          "agent_genomes[id] = {'action_net': np.zeros((9, 5)), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.zeros((54, 1))}"
-          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-         )
-      ]
-    ] [
-      ifelse evolved-preference [
-        (py:run
-          "agent_genomes[id] = {'action_net': np.random.rand(9, 5), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.random.rand(54, 1)}"
-          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-        )
-      ] [
-         (py:run
-          "agent_genomes[id] = {'action_net': np.random.rand(9, 5), 'evaluation_net': np.random.rand(9, 1), 'preference_net': np.zeros((54, 1))}"
-          "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
-          "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
-          "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
-        )
-      ]
-    ]
+    py:set "random_initial_action_net" random-initial-action-net
+    py:set "evolved_preference" evolved-preference
+    (py:run
+      "action_net = np.random.rand(len_state, num_actions) if random_initial_action_net else np.zeros((len_state, num_actions))"
+      "evaluation_net = np.random.rand(len_state, 1)"
+      "preference_net = np.random.rand(len_state * (num_actions + 1), 1) if evolved_preference else np.zeros((len_state * (num_actions + 1), 1))"
+      "agent_genomes[id] = {'action_net': action_net, 'evaluation_net': evaluation_net, 'preference_net': preference_net}"
+      "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
+      "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
+      "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
+    )
   ]
 
   set-default-shape wolves "default"
@@ -296,7 +280,7 @@ to update-action-net  ;; sheep procedure
       "max_q_val = np.max(q_vals_state)"
       "q_val_last_state_action = q_vals_last_state[last_action]"
       "err = td_error + 0.99 * max_q_val - q_val_last_state_action"
-      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / 9 * err * np.array(agent_last_state)"
+      "agent_genomes[agent_id]['action_net'][:, last_action] = agent_genomes[agent_id]['action_net'][:, last_action] + alpha * 1 / len_state * err * np.array(agent_last_state)"
     )
 
     set last_reward py:runresult "td_error"
@@ -324,8 +308,8 @@ to move-sheep
     ifelse action = 0 [ fd 1 ] [
       ifelse action = 1 [ rt 90 ] [
         ifelse action = 2 [ lt 90 ] [
-          ifelse action = 3 [ eat-grass ] [
-            if action = 4 [ maybe-reproduce-sheep ]
+          ifelse action = 3 [ maybe-reproduce-sheep ] [
+            if action = 4 [ eat-grass ]
           ]
         ]
       ]
@@ -381,13 +365,13 @@ to maybe-reproduce-sheep
         ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['initial_action_net'] + 0.5 *  agent_genomes[partner_id]['initial_action_net'] + \\"
-          "0.1 * np.random.rand(9, 5) * crossover,\\"
+          "0.1 * np.random.rand(len_state, num_actions) * crossover,\\"
 
           "'evaluation_net': 0.5 * agent_genomes[parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + \\"
-          "0.1 * np.random.rand(9, 1),\\"
+          "0.1 * np.random.rand(len_state, 1),\\"
 
           "'preference_net': 0.5 * agent_genomes[parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + \\"
-          "0.1 * np.random.rand(54, 1) * ev_crossover}"
+          "0.1 * np.random.rand(len_state * (num_actions + 1), 1) * ev_crossover}"
 
           "agent_genomes[id]['initial_action_net'] = np.copy(agent_genomes[id]['action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][id] = get_preference(key, id)"
@@ -405,7 +389,7 @@ to catch-sheep  ;; wolf procedure
       set energy (energy - attack-damage)
     ]
     if [energy] of prey <= 0 [
-      set energy energy + wolf-gain-from-kill
+      set energy min list (energy + wolf-gain-from-kill) wolf-max-energy
     ]
     ask prey [
       maybe-die-sheep
