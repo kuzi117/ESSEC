@@ -487,13 +487,13 @@ to grow-grass  ;; patch procedure
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-178
+68
 10
-597
-430
+472
+415
 -1
 -1
-6.74
+6.5
 1
 20
 1
@@ -514,10 +514,10 @@ ticks
 30.0
 
 SLIDER
-6
-55
-178
-88
+13
+415
+208
+448
 sheep-initial-number
 sheep-initial-number
 0
@@ -529,25 +529,25 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-430
-178
-463
+208
+415
+403
+448
 wolves-initial-number
 wolves-initial-number
 0
 250
-1.0
+2.0
 1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-384
-430
-481
-463
+13
+10
+68
+43
 Reset
 setup
 NIL
@@ -561,10 +561,10 @@ NIL
 1
 
 BUTTON
-481
-430
-578
-463
+13
+43
+68
+76
 Loop
 go
 T
@@ -578,9 +578,9 @@ NIL
 0
 
 PLOT
-597
+598
 10
-1089
+1090
 153
 Populations
 Time
@@ -598,9 +598,9 @@ PENS
 "Grass / 4" 1.0 0 -10899396 true "" ";; divide by four to keep it within similar\n;; range as wolf and sheep populations\nplot count patches with [ pcolor = green ] / 4"
 
 MONITOR
-6
+472
 10
-69
+598
 55
 Sheep
 count sheep
@@ -609,10 +609,10 @@ count sheep
 11
 
 MONITOR
-6
-385
-69
-430
+472
+235
+598
+280
 Wolves
 count wolves
 0
@@ -620,21 +620,21 @@ count wolves
 11
 
 MONITOR
-6
-759
-77
-804
-Grass / 4
-count patches with [ pcolor = green ] / 4
+472
+370
+598
+415
+Grass
+count patches with [ pcolor = green ]
 0
 1
 11
 
 SLIDER
-6
-804
-178
-837
+403
+415
+598
+448
 grass-regrowth-time
 grass-regrowth-time
 0
@@ -646,10 +646,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-187
-178
-220
+13
+547
+208
+580
 sheep-reproduce-cost
 sheep-reproduce-cost
 0
@@ -661,10 +661,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-481
-463
-578
-496
+13
+76
+68
+109
 Step
 go
 NIL
@@ -678,10 +678,10 @@ NIL
 1
 
 SLIDER
-6
-253
-178
-286
+13
+613
+208
+646
 sheep-fov-cone-angle
 sheep-fov-cone-angle
 0
@@ -693,10 +693,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-286
-178
-319
+13
+646
+208
+679
 sheep-fov-cone-radius
 sheep-fov-cone-radius
 0
@@ -708,10 +708,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-88
-178
-121
+13
+448
+208
+481
 sheep-gain-from-food
 sheep-gain-from-food
 0
@@ -723,10 +723,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-220
-178
-253
+13
+580
+208
+613
 sheep-max-energy
 sheep-max-energy
 0
@@ -738,10 +738,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-154
-178
-187
+13
+514
+208
+547
 sheep-reproduce-energy
 sheep-reproduce-energy
 0
@@ -753,10 +753,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-726
-178
-759
+208
+712
+403
+745
 wolf-attack-damage
 wolf-attack-damage
 0
@@ -768,10 +768,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-121
-178
-154
+13
+481
+208
+514
 sheep-move-cost
 sheep-move-cost
 0
@@ -783,10 +783,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-661
-178
-694
+208
+646
+403
+679
 wolf-fov-cone-angle
 wolf-fov-cone-angle
 0
@@ -798,10 +798,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-319
-178
-352
+13
+679
+208
+712
 alpha
 alpha
 0
@@ -813,10 +813,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-694
-178
-727
+208
+679
+403
+712
 wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
@@ -828,10 +828,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-352
-178
-385
+13
+712
+208
+745
 epsilon
 epsilon
 0
@@ -843,9 +843,9 @@ NIL
 HORIZONTAL
 
 PLOT
-597
+598
 296
-1089
+1090
 439
 Average Sheep Lifetime
 Sheep
@@ -861,9 +861,9 @@ PENS
 "default" 1.0 0 -16777216 true "" "plotxy num_sheep_dead average_sheep_lifetime"
 
 PLOT
-597
+598
 153
-1089
+1090
 296
 Generational Populations
 Generation
@@ -879,10 +879,10 @@ PENS
 "default" 1.0 1 -16777216 true "" "histogram [generation] of sheep"
 
 SWITCH
-178
-628
-368
-661
+403
+679
+598
+712
 evolved-preference
 evolved-preference
 0
@@ -890,9 +890,9 @@ evolved-preference
 -1000
 
 PLOT
-597
+598
 439
-1089
+1090
 636
 Mean Moving Average of Sheep's Rewards
 Time
@@ -912,10 +912,10 @@ PENS
 "Zero" 1.0 0 -7500403 true "" "plot 0"
 
 BUTTON
-384
-463
-481
-496
+13
+109
+68
+142
 Profiler
 setup                  ;; set up the model\nprofiler:start         ;; start profiling\nrepeat 30 [ go ]       ;; run something you want to measure\nprofiler:stop          ;; stop profiling\nprint profiler:report  ;; view the results\nprofiler:reset         ;; clear the data\n
 NIL
@@ -929,10 +929,10 @@ NIL
 1
 
 SLIDER
-6
-463
-178
-496
+208
+448
+403
+481
 wolf-gain-from-kill
 wolf-gain-from-kill
 0
@@ -944,10 +944,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-496
-178
-529
+208
+481
+403
+514
 wolf-move-cost
 wolf-move-cost
 0
@@ -959,10 +959,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-562
-178
-595
+208
+547
+403
+580
 wolf-reproduce-energy
 wolf-reproduce-energy
 0
@@ -974,10 +974,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-6
-595
-178
-628
+208
+580
+403
+613
 wolf-reproduce-cost
 wolf-reproduce-cost
 0
@@ -989,10 +989,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-69
-385
-178
-430
+472
+325
+598
+370
 Max Wolf Energy
 max [energy] of wolves
 0
@@ -1000,10 +1000,10 @@ max [energy] of wolves
 11
 
 SLIDER
-6
-628
-178
-661
+208
+613
+403
+646
 wolf-max-energy
 wolf-max-energy
 0
@@ -1015,10 +1015,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-69
-10
-178
-55
+472
+100
+598
+145
 Max Sheep Energy
 max [energy] of sheep
 0
@@ -1026,10 +1026,10 @@ max [energy] of sheep
 11
 
 SWITCH
-178
-463
-368
-496
+403
+481
+598
+514
 wolves-chase-sheep
 wolves-chase-sheep
 0
@@ -1037,10 +1037,10 @@ wolves-chase-sheep
 -1000
 
 SWITCH
-178
-562
-368
-595
+403
+613
+598
+646
 random-initial-action-net
 random-initial-action-net
 0
@@ -1048,10 +1048,10 @@ random-initial-action-net
 -1000
 
 SWITCH
-178
-595
-368
-628
+403
+646
+598
+679
 evolved-initial-action-net
 evolved-initial-action-net
 0
@@ -1059,10 +1059,10 @@ evolved-initial-action-net
 -1000
 
 SWITCH
-178
-529
-368
-562
+403
+580
+598
+613
 sheep-always-eat
 sheep-always-eat
 1
@@ -1070,10 +1070,10 @@ sheep-always-eat
 -1000
 
 SWITCH
-178
-430
-368
-463
+403
+448
+598
+481
 always-have-wolves
 always-have-wolves
 0
@@ -1081,10 +1081,10 @@ always-have-wolves
 -1000
 
 SLIDER
-7
-529
-178
-562
+208
+514
+403
+547
 wolf-attack-cost
 wolf-attack-cost
 0
@@ -1096,10 +1096,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-178
-496
-368
-529
+403
+547
+598
+580
 wolves-always-eat
 wolves-always-eat
 1
@@ -1107,36 +1107,69 @@ wolves-always-eat
 -1000
 
 CHOOSER
-178
-661
-368
-706
+403
+712
+598
+757
 preference-net-type
 preference-net-type
 "other-genome" "euclidean-distance" "absolute-difference" "squared-difference"
 1
 
 MONITOR
-1176
-112
-1339
-157
-NIL
+472
+280
+598
+325
+Min Wolf Energy
 min [energy] of wolves
 0
 1
 11
 
 SWITCH
-1169
-186
-1386
-219
+403
+514
+598
+547
 wolves-chase-weakest
 wolves-chase-weakest
 0
 1
 -1000
+
+MONITOR
+472
+55
+598
+100
+Min Sheep Energy
+min [energy] of sheep
+17
+1
+11
+
+MONITOR
+472
+145
+598
+190
+Min Reproduce Sheep
+count sheep with [energy > sheep-reproduce-energy]
+0
+1
+11
+
+MONITOR
+472
+190
+598
+235
+High Energy Sheep
+count sheep with [energy + sheep-gain-from-food > sheep-max-energy]
+0
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
