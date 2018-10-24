@@ -1751,6 +1751,8 @@ setup</setup>
     <go>go</go>
     <timeLimit steps="1000"/>
     <metric>timer</metric>
+    <metric>count sheep</metric>
+    <metric>count wolves</metric>
     <enumeratedValueSet variable="wolf-fov-cone-angle">
       <value value="180"/>
     </enumeratedValueSet>
