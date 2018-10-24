@@ -193,68 +193,6 @@ to go
   tick
 end
 
-to move-wolf
-  ifelse wolves-chase-sheep [
-    let sheep_in_cone sheep in-cone wolf-fov-cone-radius wolf-fov-cone-angle
-    let closest_sheep min-one-of sheep_in_cone [distance myself]
-
-    ;; No closest sheep, move randomly.
-    ifelse closest_sheep = nobody
-    [
-      ;; Chance to turn
-      if random-float 1 < 0.25
-      [
-        ;; Turn left or right 50/50.
-        ifelse random-float 1 < 0.5
-        [ rt 90 ]
-        [ lt 90 ]
-      ]
-      ;; Move forwards always if we're moving randomly.
-      fd 1
-    ]
-    ;; Seen a sheep move towards it on a cardinal direction.
-    [
-      ;; If we're not on a sheep then we need to change heading and move.
-      let dist_to distance closest_sheep
-
-      if dist_to > 0
-      [
-        ;; towards returns [0, 360)
-        let angle_to towards closest_sheep
-
-        ;; We're going to cut the range [0, 360] into quadrants divided at
-        ;; 45 degree points such that we clamp the heading to a cardinal
-        ;; direction. Note that the vertical axes are not inclusive of their
-        ;; end points, so we prefer movement on the x axis if our target is
-        ;; directly on a diagonal.
-
-        ;; If the angle is in [0,45) or (315, 360) then we want to go up.
-        if angle_to < 45 or angle_to > 315
-        [set heading 0]
-
-        ;; If the angle is in [45, 135] we go right.
-        if angle_to >= 45 and angle_to <= 135
-        [set heading 90]
-
-        ;; If the angle is in (135, 225) we go down.
-        if angle_to > 135 and angle_to < 225
-        [set heading 180]
-
-        ;; If the angle is in [225, 315] we go left.
-        if angle_to >= 225 and angle_to <= 315
-        [set heading -90]
-
-        ;; Need to move now.
-        fd 1
-      ]
-    ]
-  ] [
-    ifelse random-float 1 < 0.5
-      [ rt 90 ] [ lt 90 ]
-    fd 1
-  ]
-end
-
 to update-action-net  ;; sheep procedure
   if not empty? last_state [
     py:set "agent_last_state" last_state
@@ -322,18 +260,6 @@ to eat-grass
   ]
 end
 
-to maybe-reproduce-wolves
-  if energy > wolf-reproduce-energy
-  [
-    set energy energy - wolf-reproduce-energy
-    hatch 1 [
-      set energy wolf-reproduce-energy
-      set heading one-of (list 0 90 180 270)
-      fd 1
-    ]
-  ]
-end
-
 to maybe-reproduce-sheep
   if energy > sheep-reproduce-energy [
     if last_id_of_preferred_sheep_in_cone != -1 [
@@ -371,21 +297,6 @@ to maybe-reproduce-sheep
           "agent_preferences[id] = {key: get_preference(id, key) for key in agent_preferences.keys()}"
         )
       ]
-    ]
-  ]
-end
-
-to catch-sheep  ;; wolf procedure
-  let prey one-of sheep-here
-  if prey != nobody [
-    ask prey [
-      set energy (energy - wolf-attack-damage)
-    ]
-    if [energy] of prey <= 0 [
-      set energy energy + wolf-gain-from-kill
-    ]
-    ask prey [
-      maybe-die-sheep
     ]
   ]
 end
