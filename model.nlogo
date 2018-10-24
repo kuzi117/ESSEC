@@ -878,7 +878,7 @@ wolf-gain-from-kill
 wolf-gain-from-kill
 0
 100
-10.0
+20.0
 1
 1
 NIL
@@ -893,7 +893,7 @@ wolf-energy-loss
 wolf-energy-loss
 0
 5
-1.0
+2.0
 0.25
 1
 NIL
@@ -907,8 +907,8 @@ SLIDER
 wolf-reproduce-energy
 wolf-reproduce-energy
 0
-100
-70.0
+250
+150.0
 1
 1
 NIL
@@ -923,7 +923,7 @@ wolf-reproduce-cost
 wolf-reproduce-cost
 0
 wolf-reproduce-energy / 2
-20.0
+75.0
 1
 1
 NIL
@@ -949,7 +949,7 @@ wolf-max-energy
 wolf-max-energy
 0
 250
-100.0
+200.0
 1
 1
 NIL
