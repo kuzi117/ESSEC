@@ -148,7 +148,7 @@ to setup
   [
     set size 3
     set color black
-    set energy random wolf-max-energy ;; --> random energy? <--
+    set energy random wolf-reproduce-energy - 1
     setxy round random-xcor round random-ycor
     set heading one-of (list 0 90 180 270)
   ]
@@ -176,7 +176,7 @@ to go
       create-wolves 1 [
         setxy round random-xcor round random-ycor
         set heading one-of (list 0 90 180 270)
-        set energy random wolf-max-energy
+        set energy random wolf-reproduce-energy - 1
         set size 3
         set color black
       ]
