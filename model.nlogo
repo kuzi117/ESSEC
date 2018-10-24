@@ -539,7 +539,7 @@ wolves-initial-number
 wolves-initial-number
 0
 250
-2.0
+1.0
 1
 1
 NIL
@@ -984,7 +984,7 @@ wolf-reproduce-cost
 wolf-reproduce-cost
 0
 wolf-reproduce-energy / 2
-20.0
+25.0
 1
 1
 NIL
