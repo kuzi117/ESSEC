@@ -317,8 +317,8 @@ to maybe-reproduce-sheep
         set generation max_parent_gen + 1
         set reward_avg 0
         set reward_count 0
-        ifelse evolved-initial-action-net [ py:set "crossover" 0 ] [ py:set "crossover" 1 ]
-        ifelse evolved-preference [ py:set "ev_crossover" 0 ] [ py:set "ev_crossover" 1 ]
+        ifelse evolved-initial-action-net [ py:set "crossover" 1 ] [ py:set "crossover" 0 ]
+        ifelse evolved-preference [ py:set "ev_crossover" 1 ] [ py:set "ev_crossover" 0 ]
         (py:run
           "agent_genomes[id] = {'action_net': 0.5 * agent_genomes[parent_id]['initial_action_net'] + 0.5 *  agent_genomes[partner_id]['initial_action_net'] + \\"
           "0.1 * np.random.rand(len_state, num_actions) * crossover,\\"
