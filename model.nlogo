@@ -722,7 +722,7 @@ sheep-gain-from-food
 sheep-gain-from-food
 0
 100
-15.0
+20.0
 1
 1
 NIL
