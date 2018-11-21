@@ -1,18 +1,5 @@
 import numpy
 
-agent_genomes = {}
-agent_preferences = {}
-def get_preference(self, other):
-  other_genome = np.concatenate(
-          (agent_genomes[other]['evaluation_net'].flat,
-           agent_genomes[other]['initial_action_net'].flat)
-          ).flat
-
-  preference = agent_genomes[self]['preference_net']
-
-  return np.dot(other_genome, preference)[0]
-
-
 # Plotting functions
 # Moving window step reward.
 windowLength = None
