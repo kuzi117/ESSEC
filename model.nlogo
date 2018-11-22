@@ -41,6 +41,9 @@ to-report state ;; sheep procedure
     py:set "me" who
     py:set "other" [who] of closest_sheep
     set preference py:runresult "agent_preferences[me][other]"
+    if [parent_id] of closest_sheep = who [
+      set oldest_child_seen max list oldest_child_seen (ticks - [birth_tick] of closest_sheep)
+    ]
   ]
 
   let P_w list 0.0 1.0
@@ -59,11 +62,7 @@ to-report state ;; sheep procedure
       [ set P_g list 0 0  ]
   ]
 
-  if [parent_id] of closest_sheep = who [
-    set oldest_child_seen max list oldest_child_seen (ticks - [birth_tick] of closest_sheep)
-  ]
-
-  report ( sentence 1 norm_energy P_s P_w P_g preference oldest_child_seen)
+  report ( sentence 1 norm_energy P_s P_w P_g preference (oldest_child_seen / 594.594) )
 end
 
 to setup
@@ -171,8 +170,19 @@ to go
   while [ prevent-singularity ] [ wait 0.1 ]
 
   ;; stop the simulation if there is only one sheep
-  if count sheep = 1
-  [
+  if count sheep = 1 [
+     (py:run
+      "import json"
+      "genome = agent_genomes[list(agent_genomes.keys())[0]]"
+      "genome['initial_action_net'] = genome['initial_action_net'].tolist()"
+      "genome['action_net'] = genome['action_net'].tolist()"
+      "genome['evaluation_net'] = genome['evaluation_net'].tolist()"
+      "genome['profile_net'] = genome['profile_net'].tolist()"
+      "genome['preference_net'] = genome['preference_net'].tolist()"
+      "print(json.dumps(genome, indent=4, separators=(',', ':'), sort_keys=True))"
+    )
+  ]
+  if count sheep <= 1 [
     export-all-plots (word "results " date-and-time ".csv")
     stop
   ]
@@ -333,8 +343,18 @@ to maybe-reproduce-sheep
   ]
 end
 
+to-report hazard
+  let age ticks - birth_tick
+  let will_die false
+  let k 10
+  let lambda 625
+  let h (k / lambda) * ((age / lambda) ^ (k - 1))
+  if random-float 1 < h [ set will_die true ]
+  report ( will_die )
+end
+
 to maybe-die-sheep
-  if energy < 0 [
+  if (energy < 0) or hazard [
     let lifetime ticks - birth_tick
     set num_sheep_dead (num_sheep_dead + 1)
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
@@ -1130,7 +1150,7 @@ SWITCH
 505
 random-initial-evaluation-net
 random-initial-evaluation-net
-1
+0
 1
 -1000
 
@@ -1141,7 +1161,7 @@ SWITCH
 538
 random-initial-profile-net
 random-initial-profile-net
-1
+0
 1
 -1000
 
@@ -1152,7 +1172,7 @@ SWITCH
 571
 random-initial-preference-net
 random-initial-preference-net
-1
+0
 1
 -1000
 
@@ -1627,35 +1647,38 @@ repeat 75 [ go ]
     <setup>setup</setup>
     <go>go</go>
     <metric>count sheep</metric>
+    <enumeratedValueSet variable="random-initial-preference-net">
+      <value value="false"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-fov-cone-angle">
       <value value="180"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-move-cost">
-      <value value="0.75"/>
+      <value value="1.25"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-always-eat">
+    <enumeratedValueSet variable="preference-net-mutation">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="random-initial-evaluation-net">
       <value value="false"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-preference">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-always-eat">
+    <enumeratedValueSet variable="wolves-always-eat">
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-reproduce-cost">
       <value value="15"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="sheep-always-eat">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-attack-cost">
+      <value value="1.25"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-initial-number">
       <value value="100"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="0.75"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-fov-cone-radius">
-      <value value="10"/>
+    <enumeratedValueSet variable="evaluation-net-mutation">
+      <value value="0.5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-reproduce-energy">
       <value value="40"/>
@@ -1663,20 +1686,26 @@ repeat 75 [ go ]
     <enumeratedValueSet variable="wolf-gain-from-kill">
       <value value="20"/>
     </enumeratedValueSet>
+    <enumeratedValueSet variable="wolf-fov-cone-radius">
+      <value value="10"/>
+    </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-gain-from-food">
       <value value="20"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="grass-regrowth-time">
-      <value value="250"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-initial-action-net">
-      <value value="true"/>
+      <value value="400"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-reproduce-cost">
-      <value value="75"/>
+      <value value="25"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="epsilon">
       <value value="0.1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="initial-action-net-mutation">
+      <value value="0.5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="always-have-wolves">
+      <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolves-chase-sheep">
       <value value="true"/>
@@ -1684,11 +1713,11 @@ repeat 75 [ go ]
     <enumeratedValueSet variable="sheep-max-energy">
       <value value="100"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="always-have-wolves">
-      <value value="true"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="20"/>
+      <value value="40"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="profile-net-mutation">
+      <value value="0.5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="alpha">
       <value value="0.3"/>
@@ -1696,310 +1725,29 @@ repeat 75 [ go ]
     <enumeratedValueSet variable="wolf-reproduce-energy">
       <value value="150"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
     <enumeratedValueSet variable="wolves-initial-number">
       <value value="1"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="profile-size">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="wolves-chase-weakest">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="random-initial-profile-net">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-max-energy">
       <value value="200"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="preference-net-type">
-      <value value="&quot;other-genome&quot;"/>
-      <value value="&quot;euclidean-distance&quot;"/>
       <value value="&quot;absolute-difference&quot;"/>
-      <value value="&quot;squared-difference&quot;"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="prevent-singularity">
+      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="random-initial-action-net">
       <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-move-cost">
-      <value value="0.5"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="Wolf hyper parameters" repetitions="2" runMetricsEveryStep="false">
-    <setup>reset-timer
-setup</setup>
-    <go>go</go>
-    <timeLimit steps="500"/>
-    <metric>timer</metric>
-    <metric>ticks</metric>
-    <enumeratedValueSet variable="wolf-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-move-cost">
-      <value value="1.25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-always-eat">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-preference">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce-cost">
-      <value value="15"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-always-eat">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-initial-number">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce-energy">
-      <value value="40"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="wolf-gain-from-kill" first="10" step="5" last="20"/>
-    <enumeratedValueSet variable="sheep-gain-from-food">
-      <value value="20"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="grass-regrowth-time">
-      <value value="400"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-initial-action-net">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="wolf-reproduce-cost" first="20" step="5" last="30"/>
-    <enumeratedValueSet variable="epsilon">
-      <value value="0.1"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="always-have-wolves">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-chase-sheep">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-max-energy">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <steppedValueSet variable="wolf-attack-damage" first="20" step="10" last="50"/>
-    <enumeratedValueSet variable="alpha">
-      <value value="0.3"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-reproduce-energy">
-      <value value="150"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-initial-number">
-      <value value="2"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-chase-weakest">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-max-energy">
-      <value value="200"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="preference-net-type">
-      <value value="&quot;euclidean-distance&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="random-initial-action-net">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-move-cost">
-      <value value="0.5"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="runs" repetitions="10" runMetricsEveryStep="true">
-    <setup>reset-timer
-setup</setup>
-    <go>go</go>
-    <timeLimit steps="1000"/>
-    <metric>timer</metric>
-    <metric>count sheep</metric>
-    <metric>count wolves</metric>
-    <enumeratedValueSet variable="wolf-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-move-cost">
-      <value value="1.25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-always-eat">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-preference">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-always-eat">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-initial-number">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce-cost">
-      <value value="15"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-gain-from-kill">
-      <value value="20"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce-energy">
-      <value value="40"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-gain-from-food">
-      <value value="15"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="grass-regrowth-time">
-      <value value="400"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-initial-action-net">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-reproduce-cost">
-      <value value="25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="epsilon">
-      <value value="0.1"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-chase-sheep">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-max-energy">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="always-have-wolves">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="alpha">
-      <value value="0.3"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-reproduce-energy">
-      <value value="150"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-initial-number">
-      <value value="1"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-chase-weakest">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-max-energy">
-      <value value="200"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="preference-net-type">
-      <value value="&quot;euclidean-distance&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="random-initial-action-net">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-move-cost">
-      <value value="0.5"/>
-    </enumeratedValueSet>
-  </experiment>
-  <experiment name="howLong" repetitions="1" runMetricsEveryStep="true">
-    <setup>reset-timer
-setup</setup>
-    <go>go</go>
-    <metric>timer</metric>
-    <enumeratedValueSet variable="wolf-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-move-cost">
-      <value value="1.25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-always-eat">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-preference">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-always-eat">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-initial-number">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce-cost">
-      <value value="15"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-fov-cone-radius">
-      <value value="10"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-gain-from-kill">
-      <value value="20"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-reproduce-energy">
-      <value value="40"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-gain-from-food">
-      <value value="15"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="grass-regrowth-time">
-      <value value="400"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="evolved-initial-action-net">
-      <value value="false"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-reproduce-cost">
-      <value value="25"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="epsilon">
-      <value value="1"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-chase-sheep">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-max-energy">
-      <value value="100"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="always-have-wolves">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="alpha">
-      <value value="0.3"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-reproduce-energy">
-      <value value="150"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="sheep-fov-cone-angle">
-      <value value="180"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-initial-number">
-      <value value="1"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolves-chase-weakest">
-      <value value="true"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="wolf-max-energy">
-      <value value="200"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="preference-net-type">
-      <value value="&quot;euclidean-distance&quot;"/>
-    </enumeratedValueSet>
-    <enumeratedValueSet variable="random-initial-action-net">
-      <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-move-cost">
       <value value="0.5"/>
