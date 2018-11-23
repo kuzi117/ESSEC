@@ -18,6 +18,7 @@ sheep-own [
   reward_avg
   reward_count
   parent_id
+  oparent_id
   oldest_child_seen
 ]
 wolves-own [ energy ]
@@ -128,6 +129,8 @@ to setup
     py:set "agent_id" who
     set birth_tick 0
     set generation 0
+    set parent_id -1
+    set oparent_id -1
     py:set "random_initial_action_net" random-initial-action-net
     py:set "random_initial_evaluation_net" random-initial-evaluation-net
     py:set "random_initial_profile_net" random-initial-profile-net
@@ -184,6 +187,7 @@ to go
   ]
   if count sheep <= 1 [
     export-all-plots (word "results " date-and-time ".csv")
+    py:run "helper.saveEulogies()"
     stop
   ]
 
@@ -320,6 +324,7 @@ to maybe-reproduce-sheep
         set reward_avg 0
         set reward_count 0
         set parent_id first_parent_id
+        set oparent_id partner_id
         set oldest_child_seen 0
         set heading one-of (list 0 90 180 270)
         fd 1
@@ -360,6 +365,15 @@ to maybe-die-sheep
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
     set average_sheep_lifetime average_sheep_lifetime + delta
     py:set "dead_sheep" who
+
+    ;; Dump eulogy.
+    py:set "parent" parent_id
+    py:set "partner" oparent_id
+    py:set "age" lifetime
+    py:set "gen" generation
+    py:set "reward_avg" reward_avg
+    py:run "helper.addEulogy(dead_sheep, parent, partner, age, gen, reward_avg)"
+
     if count sheep = 1 [
       py:run "print(agent_genomes[dead_sheep], agent_preferences[dead_sheep])"
     ]

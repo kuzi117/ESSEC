@@ -1,4 +1,6 @@
 import numpy
+import datetime
+import pickle
 
 # Plotting functions
 # Moving window step reward.
@@ -54,3 +56,18 @@ def getWindowRewardAvg():
 def getAllRewardAvg():
   # The rolling average is already computed when adding step info. Just return.
   return avg if stepCount != None and stepCount > 0 else 0
+
+
+# Tracking death info.
+eulogies = {}
+def addEulogy(me, parent, partner, age, generation, reward_avg):
+  global eulogies
+  eulogies[me] = (parent, partner, age, generation, reward_avg)
+
+# Dump eulogies to pickle file.
+def saveEulogies():
+  date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+  path = date + "-eul.pck"
+  print('Saving eulogies: ' + path)
+  with open(path, 'wb') as f:
+    pickle.dump(eulogies, f)
