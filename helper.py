@@ -71,3 +71,9 @@ def saveEulogies():
   print('Saving eulogies: ' + path)
   with open(path, 'wb') as f:
     pickle.dump(eulogies, f)
+
+# Make up a file name for genomes.
+def getGenomeFileName():
+  date = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+  path = date + "-gen.pck"
+  return path

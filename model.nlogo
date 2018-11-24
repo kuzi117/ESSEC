@@ -172,23 +172,8 @@ end
 to go
   while [ prevent-singularity ] [ wait 0.1 ]
 
-  ;; stop the simulation if there is only one sheep
-  if count sheep = 1 [
-     (py:run
-      "import json"
-      "genome = agent_genomes[list(agent_genomes.keys())[0]]"
-      "genome['initial_action_net'] = genome['initial_action_net'].tolist()"
-      "genome['action_net'] = genome['action_net'].tolist()"
-      "genome['evaluation_net'] = genome['evaluation_net'].tolist()"
-      "genome['profile_net'] = genome['profile_net'].tolist()"
-      "genome['preference_net'] = genome['preference_net'].tolist()"
-      "print(json.dumps(genome, indent=4, separators=(',', ':'), sort_keys=True))"
-    )
-  ]
-  if count sheep <= 1 [
-    export-all-plots (word "results " date-and-time ".csv")
-    py:run "helper.saveEulogies()"
-    stop
+  if count sheep = 0 [
+      stop
   ]
 
   ;; ensure there's always one wolf
@@ -375,12 +360,15 @@ to maybe-die-sheep
     py:run "helper.addEulogy(dead_sheep, parent, partner, age, gen, reward_avg)"
 
     if count sheep = 1 [
-      py:run "print(agent_genomes[dead_sheep], agent_preferences[dead_sheep])"
+      export-all-plots (word "results " date-and-time ".csv")
+     (py:run
+        "import pickle"
+        "filename = helper.getGenomeFileName()"
+        "with open(filename, 'wb') as f: pickle.dump(agent_genomes, f)"
+        "helper.saveEulogies()"
+      )
     ]
-    (py:run
-      "del agent_genomes[dead_sheep]"
-      "del agent_preferences[dead_sheep]"
-    )
+
     die
   ]
 end
