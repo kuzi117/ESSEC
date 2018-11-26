@@ -357,7 +357,7 @@ to maybe-die-sheep
     py:set "age" lifetime
     py:set "gen" generation
     py:set "reward_avg" reward_avg
-    py:set "tick" tick
+    py:set "tick" ticks
     py:run "helper.addEulogy(dead_sheep, parent, partner, age, gen, reward_avg, tick)"
 
     if count sheep = 1 [
