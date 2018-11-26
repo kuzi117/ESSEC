@@ -60,9 +60,9 @@ def getAllRewardAvg():
 
 # Tracking death info.
 eulogies = {}
-def addEulogy(me, parent, partner, age, generation, reward_avg):
+def addEulogy(me, parent, partner, age, generation, reward_avg, death_tick):
   global eulogies
-  eulogies[me] = (parent, partner, age, generation, reward_avg)
+  eulogies[me] = (parent, partner, age, generation, reward_avg, death_tick)
 
 # Dump eulogies to pickle file.
 def saveEulogies():

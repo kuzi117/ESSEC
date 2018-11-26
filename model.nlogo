@@ -349,15 +349,16 @@ to maybe-die-sheep
     set num_sheep_dead (num_sheep_dead + 1)
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
     set average_sheep_lifetime average_sheep_lifetime + delta
-    py:set "dead_sheep" who
 
     ;; Dump eulogy.
+    py:set "dead_sheep" who
     py:set "parent" parent_id
     py:set "partner" oparent_id
     py:set "age" lifetime
     py:set "gen" generation
     py:set "reward_avg" reward_avg
-    py:run "helper.addEulogy(dead_sheep, parent, partner, age, gen, reward_avg)"
+    py:set "tick" tick
+    py:run "helper.addEulogy(dead_sheep, parent, partner, age, gen, reward_avg, tick)"
 
     if count sheep = 1 [
       export-all-plots (word "results " date-and-time ".csv")
