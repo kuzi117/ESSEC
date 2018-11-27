@@ -31,7 +31,8 @@ def manyFiles(filename=None):
   '''
   Filename will automatically be append with pdf for rasterised images.
   '''
-  am.plotPopulationDeclines(sys.argv[1:])
+  #am.plotPopulationDeclines(sys.argv[1:])
+  am.printSweepStatistics(sys.argv[1:])
 
   plt.show()
 
