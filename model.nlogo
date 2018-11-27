@@ -344,7 +344,7 @@ to-report hazard
 end
 
 to maybe-die-sheep
-  if (energy < 0) or hazard [
+  if (energy < 0) or hazard or ticks > 10 [
     let lifetime ticks - birth_tick
     set num_sheep_dead (num_sheep_dead + 1)
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
@@ -360,7 +360,7 @@ to maybe-die-sheep
     py:set "tick" ticks
     py:run "helper.addEulogy(dead_sheep, parent, partner, age, gen, reward_avg, tick)"
 
-    if count sheep = 1 [
+    if count sheep = 1  [
       export-all-plots (word "results " date-and-time ".csv")
      (py:run
         "import pickle"
@@ -1759,7 +1759,6 @@ repeat 75 [ go ]
   <experiment name="onerun" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="25000"/>
     <metric>count turtles</metric>
     <enumeratedValueSet variable="random-initial-preference-net">
       <value value="true"/>
@@ -1870,7 +1869,6 @@ repeat 75 [ go ]
   <experiment name="onerun-random-mating" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="25000"/>
     <metric>count turtles</metric>
     <enumeratedValueSet variable="random-initial-preference-net">
       <value value="false"/>
