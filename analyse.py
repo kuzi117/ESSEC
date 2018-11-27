@@ -31,8 +31,12 @@ def manyFiles(filename=None):
   '''
   Filename will automatically be append with pdf for rasterised images.
   '''
-  #am.plotPopulationDeclines(sys.argv[1:])
-  am.printSweepStatistics(sys.argv[1:])
+  if sys.argv[1] == 'files':
+    am.plotPopulationDeclines(sys.argv[2:])
+  elif sys.argv[1] == 'dirs':
+    am.printSweepStatistics(sys.argv[2:])
+  else:
+    print('Second arg should be files or dirs')
 
   plt.show()
 
