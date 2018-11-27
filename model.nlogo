@@ -344,7 +344,7 @@ to-report hazard
 end
 
 to maybe-die-sheep
-  if (energy < 0) or hazard or ticks > 10 [
+  if (energy < 0) or hazard or ticks > 25000 [
     let lifetime ticks - birth_tick
     set num_sheep_dead (num_sheep_dead + 1)
     let delta (lifetime - average_sheep_lifetime) / num_sheep_dead
