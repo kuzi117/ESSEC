@@ -25,6 +25,7 @@ def oneFile():
   ao.plotGenerationAges(eulogies)
   ao.plotGenerationRewards(eulogies)
   ao.plotAgeGeneration(eulogies)
+  ao.plotBDPerTick(eulogies)
 
   plt.show()
 

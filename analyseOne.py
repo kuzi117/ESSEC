@@ -111,7 +111,7 @@ def drawOneFamilyTree(data, agentId, filename=None, children=False):
 
 def plotGenerationAges(data, keys=None, filename=None):
   '''
-  Filename will automatically be append with pdf for rasterised images.
+  Filename will automatically be append with pdf.
   '''
   # Initial setup.
   if keys is None:
@@ -166,7 +166,7 @@ def plotGenerationAges(data, keys=None, filename=None):
   
 def plotGenerationRewards(data, keys=None, filename=None):
   '''
-  Filename will automatically be append with pdf for rasterised images.
+  Filename will automatically be append with pdf.
   '''
   # Initial setup.
   if keys is None:
@@ -217,7 +217,7 @@ def plotGenerationRewards(data, keys=None, filename=None):
 
 def plotAgeGeneration(data, keys=None, filename=None):
   '''
-  Filename will automatically be append with pdf for rasterised images.
+  Filename will automatically be appended with pdf.
   '''
   # Initial setup.
   if keys is None:
@@ -241,3 +241,61 @@ def plotAgeGeneration(data, keys=None, filename=None):
   ax = fig.add_subplot(1, 1, 1)
 
   ax.scatter(range(len(gen)), gen)
+
+def plotBDPerTick(data, filename=None):
+  '''
+  Plots births and deaths per tick.
+  Filename wil automatically be appended with pdf.
+  '''
+  # Initial setup.
+  if filename is None:
+    filename = 'ageGen'
+
+  # Data setup.
+  agentId = util.pickLastAgent(data)
+  maxTick = data[agentId][5] + 1
+  births = [0] * maxTick
+  deaths = [0] * maxTick
+
+  # Data build.
+  for a in data:
+    d = data[a]
+    births[d[5] - d[2]] += 1
+    deaths[d[5]] += 1
+
+  # Data filter.
+  births = np.array(births)
+  deaths = np.array(deaths)
+  birthsFilter = births != 0
+  birthsFilter[[0, 1]] = False # Skip tick 0.
+  birthsIdxs = np.arange(maxTick)[birthsFilter]
+  births = births[birthsFilter]
+  deathsFilter = deaths != 0
+  deathsFilter[[0, 1]] = False # Skip tick 0.
+  deathsIdxs = np.arange(maxTick)[deathsFilter]
+  deaths = deaths[deathsFilter]
+
+  # Plot.
+  fig = plt.figure()
+  ax1 = fig.add_subplot(2, 1, 1)
+  ax2 = fig.add_subplot(2, 1, 2)
+  ax1.plot(birthsIdxs, births)
+  ax2.plot(deathsIdxs, deaths)
+
+  # Plot setup.
+  xb = (maxTick * -0.01, maxTick * 1.01)
+  yb = (0, max(max(births), max(deaths)))
+  ax1.set_xlim(xb)
+  ax2.set_xlim(xb)
+  ax1.set_ylim(yb)
+  ax2.set_ylim(yb)
+
+  ax1.set_title('Births Per Tick')
+  ax2.set_title('Deaths Per Tick')
+  ax1.set_xlabel('Time (ticks)')
+  ax2.set_xlabel('Time (ticks)')
+  ax1.set_ylabel('Births')
+  ax2.set_ylabel('Deaths')
+
+  fig.suptitle('Births vs Deaths Over Time')
+  fig.tight_layout()
