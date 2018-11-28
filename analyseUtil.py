@@ -6,13 +6,15 @@ if __name__ == '__main__':
   print('Run analyse.py not analyseUtil.py')
   sys.exit(1)
 
-import random
 import os
+import random
+import colorsys
 
 def createColor():
-  r = "{:02X}".format(random.randint(20, 200))
-  g = "{:02X}".format(random.randint(20, 200))
-  b = "{:02X}".format(random.randint(20, 200))
+  r, g, b = colorsys.hsv_to_rgb(random.random(), 1, 1)
+  r = "{:02X}".format(round(r * 255))
+  g = "{:02X}".format(round(g * 255))
+  b = "{:02X}".format(round(b * 255))
   return "#" + r + g + b
 
 def pickLastAgent(data):
