@@ -164,5 +164,7 @@ def plotSweepStatistics(dirs):
   ax.set_xticks(ind + width)
   ax.set_xticklabels(names, rotation=90)
   ax.set_ylabel('Age (ticks)')
+  ax.set_xlabel('Population')
+  ax.set_title('Population Survival Time Statistics')
   ax.legend(rects, ('Mean', 'Median', 'Max'))
   fig.tight_layout()
