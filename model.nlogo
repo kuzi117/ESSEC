@@ -772,7 +772,7 @@ wolf-attack-damage
 wolf-attack-damage
 0
 100
-40.0
+30.0
 1
 1
 NIL
@@ -1078,7 +1078,7 @@ wolf-attack-cost
 wolf-attack-cost
 0
 5
-1.25
+5.0
 .25
 1
 NIL
@@ -4499,7 +4499,7 @@ repeat 75 [ go ]
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-initial-number">
       <value value="100"/>
@@ -4544,7 +4544,7 @@ repeat 75 [ go ]
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
+      <value value="30"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="profile-net-mutation">
       <value value="0"/>
@@ -4616,7 +4616,7 @@ repeat 75 [ go ]
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-initial-number">
       <value value="100"/>
@@ -4661,7 +4661,7 @@ repeat 75 [ go ]
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
+      <value value="30"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="profile-net-mutation">
       <value value="0"/>
@@ -4733,7 +4733,7 @@ repeat 75 [ go ]
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-initial-number">
       <value value="100"/>
@@ -4778,7 +4778,7 @@ repeat 75 [ go ]
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
+      <value value="30"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="profile-net-mutation">
       <value value="0"/>
@@ -4850,7 +4850,7 @@ repeat 75 [ go ]
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-initial-number">
       <value value="100"/>
@@ -4895,7 +4895,7 @@ repeat 75 [ go ]
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
+      <value value="30"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="profile-net-mutation">
       <value value="0"/>
@@ -4967,7 +4967,7 @@ repeat 75 [ go ]
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-cost">
-      <value value="1.25"/>
+      <value value="5"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="sheep-initial-number">
       <value value="100"/>
@@ -5012,7 +5012,7 @@ repeat 75 [ go ]
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="wolf-attack-damage">
-      <value value="40"/>
+      <value value="30"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="profile-net-mutation">
       <value value="0"/>
