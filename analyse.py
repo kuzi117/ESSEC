@@ -37,7 +37,7 @@ def manyFiles():
     print('No files to analyse')
     return
 
-  am.printSweepStatistics(dirs)
+  am.plotSweepStatistics(dirs)
   am.plotPopulationDeclines(dirs)
 
   plt.show()

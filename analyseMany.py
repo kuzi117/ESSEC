@@ -96,7 +96,7 @@ def plotPopulationDeclines(inputDirs, filename=None):
   fig.savefig(filename + '.pdf', bbox_inches='tight')
   plt.show()
 
-def printSweepStatistics(dirs):
+def plotSweepStatistics(dirs):
   '''
   Given a list of directories, this will print populations statistics for comparison.
   '''
