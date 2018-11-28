@@ -153,7 +153,7 @@ def plotSweepStatistics(dirs):
         break
     else:
       assert False, 'Couldn\'t find a name for the population'
-  print(len(means), len(names))
+
   # Plot dump.
   rects = []
   for i, m in enumerate([means, meds, maxes]):
