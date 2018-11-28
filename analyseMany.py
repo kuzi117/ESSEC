@@ -9,9 +9,11 @@ if __name__ == '__main__':
 import analyseUtil as util
 
 import os
+import random
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 def _plotPopDecl(inputFiles, ax, color, qts=True):
   '''
@@ -60,18 +62,32 @@ def _plotPopDecl(inputFiles, ax, color, qts=True):
 def plotPopulationDeclines(inputDirs, filename=None):
   if filename is None:
     filename = 'popDecline'
-  
-  # Get plot.
-  fig = plt.figure()
-  ax = fig.add_subplot(1, 1, 1)
 
+  # Data setup.
+  dataFiles = {}
+  for d in inputDirs:
+    dataFiles[d] = util.gatherPcks(d)
+
+  # Same random sample out.
+  rnd = random.Random(x=1)
+  minLen = min([len(dataFiles[d]) for d in dataFiles])
+  print(dataFiles)
+  dataFiles = {d: rnd.sample(dataFiles[d], minLen) for d in dataFiles}
+  print(dataFiles)
+
+  # Get plot.
+  fig = plt.figure(figsize=(5, 3.75))
+  ax = fig.add_subplot(1, 1, 1)
+  sns.set_style('ticks')
+  palette = sns.color_palette('colorblind')
+
+  # Plotting.
   oxb = (float('inf'), float('-inf'))
   oyb = (float('inf'), float('-inf'))
   curves = []
   names = []
-  for d in inputDirs:
-    files = util.gatherPcks(d)
-    xb, yb, curve = _plotPopDecl(files, ax, util.createColor(), qts=False)
+  for i, d in enumerate(dataFiles):
+    xb, yb, curve = _plotPopDecl(dataFiles[d], ax, palette[i], qts=False)
     oxb = (min(oxb[0], xb[0]), max(oxb[1], xb[1]))
     oyb = (min(oyb[0], yb[0]), max(oyb[1], yb[1]))
     curves.append(curve)
@@ -79,7 +95,7 @@ def plotPopulationDeclines(inputDirs, filename=None):
     # Make a name for this.
     for w in reversed(os.path.split(d)):
       if w:
-        names.append(w)
+        names.append(w.replace('_', ' ').title())
         break
     else:
       assert False, 'Couldn\'t find a name for the population'
@@ -87,12 +103,12 @@ def plotPopulationDeclines(inputDirs, filename=None):
   # Plot setup.
   ax.set_xlim(oxb)
   ax.set_ylim(oyb)
-  ax.set_xlabel('Age (ticks)')
-  ax.set_ylabel('Populations Surviving')
-  ax.set_title('Populations Surviving Over Time')
-  ax.legend(curves, names)
+  ax.set_xlabel('Population Age (ticks)', labelpad=10)
+  ax.set_ylabel('Populations Surviving', labelpad=10)
+  ax.legend(curves, names, frameon=False)
 
   # Save and show.
+  fig.tight_layout()
   fig.savefig(filename + '.pdf', bbox_inches='tight')
   plt.show()
 
