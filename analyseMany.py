@@ -80,15 +80,8 @@ def printSweepStatistics(dirs):
     if not os.path.isdir(d):
       continue
 
-    # Keep only pck files.
-    dirFiles = []
-    for f in os.listdir(d):
-      path = os.path.join(d, f)
-      if os.path.isfile(path) and os.path.splitext(path)[1] == '.pck':
-        dirFiles.append(path)
-
     # Save files for dir.
-    files[d] = dirFiles
+    files[d] = util.gatherPcks(d)
 
   # Get data.
   data = {}

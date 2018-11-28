@@ -1,11 +1,13 @@
 '''
 Holds utility functions for analysing data.
 '''
+import sys
 if __name__ == '__main__':
   print('Run analyse.py not analyseUtil.py')
   sys.exit(1)
 
 import random
+import os
 
 def createColor():
   r = "{:02X}".format(random.randint(20, 200))
@@ -80,3 +82,17 @@ def extractFamily(agentId, data, includeChildren):
       toSee |= children[a][0] - family
     
   return family
+
+def gatherPcks(path):
+  # Sanity.
+  assert os.path.exists(path), 'Gather pcks path does not exist'
+  assert os.path.isdir(path), 'Gather pcks not in dir.'
+
+  # Keep only pck files.
+  dirFiles = []
+  for f in os.listdir(path):
+    d = os.path.join(path, f)
+    if os.path.isfile(d) and os.path.splitext(d)[1] == '.pck':
+      dirFiles.append(d)
+
+  return dirFiles
