@@ -73,7 +73,6 @@ def plotPopulationDeclines(inputDirs, filename=None):
   minLen = min([len(dataFiles[d]) for d in dataFiles])
   print(dataFiles)
   dataFiles = {d: rnd.sample(dataFiles[d], minLen) for d in dataFiles}
-  print(dataFiles)
 
   # Get plot.
   fig = plt.figure(figsize=(5, 3.75))
@@ -88,6 +87,7 @@ def plotPopulationDeclines(inputDirs, filename=None):
   names = []
   for i, d in enumerate(dataFiles):
     xb, yb, curve = _plotPopDecl(dataFiles[d], ax, palette[i], qts=False)
+    #xb, yb, curve = _plotPopDecl(dataFiles[d], ax, util.createColor(), qts=False)
     oxb = (min(oxb[0], xb[0]), max(oxb[1], xb[1]))
     oyb = (min(oyb[0], yb[0]), max(oyb[1], yb[1]))
     curves.append(curve)
@@ -112,7 +112,7 @@ def plotPopulationDeclines(inputDirs, filename=None):
   fig.savefig(filename + '.pdf', bbox_inches='tight')
   plt.show()
 
-def plotSweepStatistics(dirs):
+def plotPopulationStatistics(dirs):
   '''
   Given a list of directories, this will print populations statistics for comparison.
   '''
