@@ -1,4 +1,5 @@
 import sys
+import os
 import pickle
 import matplotlib.pyplot as plt
 
@@ -27,16 +28,17 @@ def oneFile():
 
   plt.show()
 
-def manyFiles(filename=None):
+def manyFiles():
   '''
-  Filename will automatically be append with pdf for rasterised images.
+  Filename will automatically be appended with pdf for rasterised images.
   '''
-  if sys.argv[1] == 'files':
-    am.plotPopulationDeclines(sys.argv[2:])
-  elif sys.argv[1] == 'dirs':
-    am.printSweepStatistics(sys.argv[2:])
-  else:
-    print('Second arg should be files or dirs')
+  dirs = [d for d in sys.argv[1:] if os.path.isdir(d)]
+  if not dirs:
+    print('No files to analyse')
+    return
+
+  am.printSweepStatistics(dirs)
+  am.plotPopulationDeclines(dirs)
 
   plt.show()
 

@@ -13,10 +13,10 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-def plotPopulationDeclines(inputFiles, filename=None):
-  if filename is None:
-    filename = 'popDecline'
-
+def _plotPopDecl(inputFiles, ax, color, qts=True):
+  '''
+  Helper function that plots one population decline. Returns info for legend.
+  '''
   deathTimes = []
   
   # Get all population death times.
@@ -26,10 +26,6 @@ def plotPopulationDeclines(inputFiles, filename=None):
       agentId = util.pickLastAgent(eulogies)
       deathTimes.append(eulogies[agentId][5])
   deathTimes.sort()
-
-  # Get plot.
-  fig = plt.figure()
-  ax = fig.add_subplot(1, 1, 1)
   
   # Death times data.
   curY = len(deathTimes)
@@ -43,27 +39,58 @@ def plotPopulationDeclines(inputFiles, filename=None):
     curY -= 1
     ys.append(curY)
     xs.append(d)
-  ax.plot(xs, ys)
+  curve, = ax.plot(xs, ys, color=color)
 
   # Quartile data.
-  qtData = []
-  for i in range(1, 4):
-    p = round(len(deathTimes) * (i / 4))
-    height = len(deathTimes) - p - 1
-    dTime = deathTimes[p]
-    qtData.append(([0, dTime], [height, height]))
-    qtData.append(([dTime, dTime], [0, height]))
+  if qts:
+    qtData = []
+    for i in range(1, 4):
+      p = round(len(deathTimes) * (i / 4))
+      height = len(deathTimes) - p - 1
+      dTime = deathTimes[p]
+      qtData.append(([0, dTime], [height, height]))
+      qtData.append(([dTime, dTime], [0, height]))
 
-  # Plot Quartiles.
-  for x, y in qtData:
-    ax.plot(x, y, color='r', linestyle='--', linewidth=0.5)
+    # Plot Quartiles.
+    for x, y in qtData:
+      ax.plot(x, y, color='r', linestyle='--', linewidth=0.5)
+
+  return ((0, deathTimes[-1] * 1.01), (0, len(deathTimes) + 1), curve)
+
+def plotPopulationDeclines(inputDirs, filename=None):
+  if filename is None:
+    filename = 'popDecline'
+  
+  # Get plot.
+  fig = plt.figure()
+  ax = fig.add_subplot(1, 1, 1)
+
+  oxb = (float('inf'), float('-inf'))
+  oyb = (float('inf'), float('-inf'))
+  curves = []
+  names = []
+  for d in inputDirs:
+    files = util.gatherPcks(d)
+    xb, yb, curve = _plotPopDecl(files, ax, util.createColor(), qts=False)
+    oxb = (min(oxb[0], xb[0]), max(oxb[1], xb[1]))
+    oyb = (min(oyb[0], yb[0]), max(oyb[1], yb[1]))
+    curves.append(curve)
+    
+    # Make a name for this.
+    for w in reversed(os.path.split(d)):
+      if w:
+        names.append(w)
+        break
+    else:
+      assert False, 'Couldn\'t find a name for the population'
 
   # Plot setup.
-  ax.set_xlim([0, deathTimes[-1] * 1.01])
-  ax.set_ylim([0, len(deathTimes) + 1])
+  ax.set_xlim(oxb)
+  ax.set_ylim(oyb)
   ax.set_xlabel('Age (ticks)')
   ax.set_ylabel('Populations Surviving')
   ax.set_title('Populations Surviving Over Time')
+  ax.legend(curves, names)
 
   # Save and show.
   fig.savefig(filename + '.pdf', bbox_inches='tight')
