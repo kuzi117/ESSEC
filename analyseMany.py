@@ -71,7 +71,6 @@ def plotPopulationDeclines(inputDirs, filename=None):
   # Same random sample out.
   rnd = random.Random(x=1)
   minLen = min([len(dataFiles[d]) for d in dataFiles])
-  print(dataFiles)
   dataFiles = {d: rnd.sample(dataFiles[d], minLen) for d in dataFiles}
 
   # Get plot.
