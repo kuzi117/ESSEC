@@ -135,10 +135,26 @@ def plotSweepStatistics(dirs):
   fig = plt.figure()
   ax = fig.add_subplot(1, 1, 1)
 
+  # Plot data.
+  means = []
+  meds = []
+  maxes = []
+  names = []
+  for d in data:
+    # Data.
+    means.append(np.mean(data[d]))
+    meds.append(np.median(data[d]))
+    maxes.append(max(data[d]))
+
+    # Make a name for this.
+    for w in reversed(os.path.split(d)):
+      if w:
+        names.append(w)
+        break
+    else:
+      assert False, 'Couldn\'t find a name for the population'
+  print(len(means), len(names))
   # Plot dump.
-  means = [np.mean(data[d]) for d in data]
-  meds = [np.median(data[d]) for d in data]
-  maxes = [max(data[d]) for d in data]
   rects = []
   for i, m in enumerate([means, meds, maxes]):
     rect = ax.bar(ind + i * width, m, width=width)
@@ -146,7 +162,7 @@ def plotSweepStatistics(dirs):
 
   # Plot setup.
   ax.set_xticks(ind + width)
-  ax.set_xticklabels([os.path.split(d)[-1] for d in dirs], rotation=45)
+  ax.set_xticklabels(names, rotation=90)
   ax.set_ylabel('Age (ticks)')
   ax.legend(rects, ('Mean', 'Median', 'Max'))
   fig.tight_layout()
