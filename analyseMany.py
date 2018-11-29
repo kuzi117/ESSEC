@@ -155,36 +155,27 @@ def plotPopulationStatistics(dirs):
   fig = plt.figure()
   ax = fig.add_subplot(1, 1, 1)
 
-  # Plot data.
-  means = []
-  meds = []
-  maxes = []
+  # Names.
   names = []
   for d in data:
-    # Data.
-    means.append(np.mean(data[d]))
-    meds.append(np.median(data[d]))
-    maxes.append(max(data[d]))
-
     # Make a name for this.
     for w in reversed(os.path.split(d)):
       if w:
-        names.append(w)
+        names.append(w.replace('_', ' ').title())
         break
     else:
       assert False, 'Couldn\'t find a name for the population'
 
-  # Plot dump.
-  rects = []
-  for i, m in enumerate([means, meds, maxes]):
-    rect = ax.bar(ind + i * width, m, width=width)
-    rects.append(rect)
+  # Box plot.
+  sns.set(style="ticks")
+  boxData = [data[d] for d in data]
+  sns.boxplot(data=boxData, ax=ax, orient='h', showmeans=True, palette='muted')
 
   # Plot setup.
-  ax.set_xticks(ind + width)
-  ax.set_xticklabels(names, rotation=90)
+  ax.set_yticklabels(names)
   ax.set_ylabel('Age (ticks)')
   ax.set_xlabel('Population')
   ax.set_title('Population Survival Time Statistics')
-  ax.legend(rects, ('Mean', 'Median', 'Max'))
+  
+  # Figure setup.
   fig.tight_layout()
