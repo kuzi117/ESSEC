@@ -136,6 +136,11 @@ def plotPopulationStatistics(dirs):
         dirData.append(eulogies[agentId][5])
     data[d] = dirData
 
+  # Same random sample out.
+  rnd = random.Random(x=1)
+  minLen = min([len(data[d]) for d in data])
+  data = {d: rnd.sample(data[d], minLen) for d in data}
+
   # Text dump.
   for d in data:
     dirData = data[d]
