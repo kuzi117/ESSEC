@@ -155,7 +155,7 @@ def plotPopulationStatistics(dirs, filename=None):
   ind = np.arange(len(data))
 
   # Get plot.
-  fig = plt.figure(figsize=(5, 3.75))
+  fig = plt.figure(figsize=(5, 2.5))
   ax = fig.add_subplot(1, 1, 1)
 
   # Names.
@@ -176,9 +176,7 @@ def plotPopulationStatistics(dirs, filename=None):
 
   # Plot setup.
   ax.set_yticklabels(names)
-  ax.set_ylabel('Age (ticks)')
-  ax.set_xlabel('Population')
-  ax.set_title('Population Survival Time Statistics')
+  ax.set_xlabel('Population Age (ticks)', labelpad=10)
   
   # Figure setup.
   fig.tight_layout()
