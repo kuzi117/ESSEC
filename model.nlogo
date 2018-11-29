@@ -150,10 +150,10 @@ to setup
     py:set "random_initial_profile_net" random-initial-profile-net
     py:set "random_initial_preference_net" random-initial-preference-net
     (py:run
-      "initial_action_net = np.random.rand(len_state, num_actions) if random_initial_action_net else np.zeros((len_state, num_actions))"
-      "evaluation_net = np.random.rand(len_state, 1) if random_initial_evaluation_net else np.zeros((len_state, 1))"
-      "profile_net = np.random.rand(len_profile_genome, profile_size) if random_initial_profile_net else np.zeros((len_profile_genome, profile_size))"
-      "preference_net = np.random.rand(len_transformed_profile, 1) if random_initial_preference_net else np.zeros((len_transformed_profile, 1))"
+      "initial_action_net = np.random.normal(size=(len_state, num_actions)) if random_initial_action_net else np.zeros((len_state, num_actions))"
+      "evaluation_net = np.random.normal(size=(len_state, 1)) if random_initial_evaluation_net else np.zeros((len_state, 1))"
+      "profile_net = np.random.normal(size=(len_profile_genome, profile_size)) if random_initial_profile_net else np.zeros((len_profile_genome, profile_size))"
+      "preference_net = np.random.normal(size=(len_transformed_profile, 1)) if random_initial_preference_net else np.zeros((len_transformed_profile, 1))"
       "agent_genomes[agent_id] = {'initial_action_net': initial_action_net, 'evaluation_net': evaluation_net, 'profile_net': profile_net, 'preference_net': preference_net}"
       "agent_genomes[agent_id]['action_net'] = np.copy(agent_genomes[agent_id]['initial_action_net'])"
       "for key in agent_preferences.keys(): agent_preferences[key][agent_id] = get_preference(key, agent_id)"
@@ -334,10 +334,10 @@ to maybe-reproduce-sheep
         py:set "preference_net_mutation" preference-net-mutation
         (py:run
           "agent_genomes[child_id] = {}"
-          "agent_genomes[child_id]['initial_action_net'] = 0.5 * agent_genomes[first_parent_id]['initial_action_net'] + 0.5 * agent_genomes[partner_id]['initial_action_net'] + initial_action_net_mutation * np.random.rand(* agent_genomes[first_parent_id]['initial_action_net'].shape)"
-          "agent_genomes[child_id]['evaluation_net'] = 0.5 * agent_genomes[first_parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + evaluation_net_mutation * np.random.rand(* agent_genomes[first_parent_id]['evaluation_net'].shape)"
-          "agent_genomes[child_id]['profile_net'] = 0.5 * agent_genomes[first_parent_id]['profile_net'] + 0.5 * agent_genomes[partner_id]['profile_net'] + profile_net_mutation * np.random.rand(* agent_genomes[first_parent_id]['profile_net'].shape)"
-          "agent_genomes[child_id]['preference_net'] = 0.5 * agent_genomes[first_parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + preference_net_mutation * np.random.rand(* agent_genomes[first_parent_id]['preference_net'].shape)"
+          "agent_genomes[child_id]['initial_action_net'] = 0.5 * agent_genomes[first_parent_id]['initial_action_net'] + 0.5 * agent_genomes[partner_id]['initial_action_net'] + initial_action_net_mutation * np.random.normal(size=agent_genomes[first_parent_id]['initial_action_net'].shape)"
+          "agent_genomes[child_id]['evaluation_net'] = 0.5 * agent_genomes[first_parent_id]['evaluation_net'] + 0.5 * agent_genomes[partner_id]['evaluation_net'] + evaluation_net_mutation * np.random.normal(size=agent_genomes[first_parent_id]['evaluation_net'].shape)"
+          "agent_genomes[child_id]['profile_net'] = 0.5 * agent_genomes[first_parent_id]['profile_net'] + 0.5 * agent_genomes[partner_id]['profile_net'] + profile_net_mutation * np.random.normal(size=agent_genomes[first_parent_id]['profile_net'].shape)"
+          "agent_genomes[child_id]['preference_net'] = 0.5 * agent_genomes[first_parent_id]['preference_net'] + 0.5 * agent_genomes[partner_id]['preference_net'] + preference_net_mutation * np.random.normal(size=agent_genomes[first_parent_id]['preference_net'].shape)"
           "agent_genomes[child_id]['action_net'] = np.copy(agent_genomes[child_id]['initial_action_net'])"
           "for key in agent_preferences.keys(): agent_preferences[key][child_id] = get_preference(key, child_id)"
           "agent_preferences[child_id] = {key: get_preference(child_id, key) for key in agent_preferences.keys()}"
@@ -578,7 +578,7 @@ wolves-initial-number
 wolves-initial-number
 0
 250
-1.0
+5.0
 1
 1
 NIL
@@ -1078,7 +1078,7 @@ wolf-attack-cost
 wolf-attack-cost
 0
 5
-5.0
+1.25
 .25
 1
 NIL
