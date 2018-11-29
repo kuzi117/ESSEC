@@ -111,10 +111,13 @@ def plotPopulationDeclines(inputDirs, filename=None):
   fig.savefig(filename + '.pdf', bbox_inches='tight')
   plt.show()
 
-def plotPopulationStatistics(dirs):
+def plotPopulationStatistics(dirs, filename=None):
   '''
   Given a list of directories, this will print populations statistics for comparison.
   '''
+  if filename is None:
+    filename = 'popStats'
+
   # Get files.
   files = {}
   for d in dirs:
@@ -152,7 +155,7 @@ def plotPopulationStatistics(dirs):
   ind = np.arange(len(data))
 
   # Get plot.
-  fig = plt.figure()
+  fig = plt.figure(figsize=(5, 3.75))
   ax = fig.add_subplot(1, 1, 1)
 
   # Names.
@@ -179,3 +182,4 @@ def plotPopulationStatistics(dirs):
   
   # Figure setup.
   fig.tight_layout()
+  fig.savefig(filename + '.pdf', bbox_inches='tight')
