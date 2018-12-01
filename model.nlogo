@@ -578,7 +578,7 @@ wolves-initial-number
 wolves-initial-number
 0
 250
-5.0
+1.0
 1
 1
 NIL
@@ -802,7 +802,7 @@ wolf-fov-cone-angle
 wolf-fov-cone-angle
 0
 360
-180.0
+360.0
 15
 1
 NIL
@@ -831,8 +831,8 @@ SLIDER
 wolf-fov-cone-radius
 wolf-fov-cone-radius
 0
-60
-10.0
+1000
+1000.0
 1
 1
 NIL
