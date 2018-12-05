@@ -109,7 +109,6 @@ def plotPopulationDeclines(inputDirs, filename=None):
   # Save and show.
   fig.tight_layout()
   fig.savefig(filename + '.pdf', bbox_inches='tight')
-  plt.show()
 
 def plotPopulationStatistics(dirs, filename=None):
   '''
@@ -178,6 +177,81 @@ def plotPopulationStatistics(dirs, filename=None):
   ax.set_yticklabels(names)
   ax.set_xlabel('Population Age (ticks)', labelpad=10)
   
+  # Figure setup.
+  fig.tight_layout()
+  fig.savefig(filename + '.pdf', bbox_inches='tight')
+
+def plotMeans(dirs, filename=None):
+  '''
+  Given a list of directories, this will plot mean and standard deviation
+  '''
+  if filename is None:
+    filename = 'popMean'
+
+  # Get files.
+  files = {}
+  for d in dirs:
+    # Skip non-directories.
+    if not os.path.isdir(d):
+      continue
+
+    # Save files for dir.
+    files[d] = util.gatherPcks(d)
+
+  # Get data.
+  data = {}
+  for d in files:
+    dirData = []
+    for path in files[d]:
+      with open(path, 'rb') as f:
+        eulogies = pickle.load(f)
+        agentId = util.pickLastAgent(eulogies)
+        dirData.append(eulogies[agentId][5])
+    data[d] = dirData
+
+  # Same random sample out.
+  rnd = random.Random(x=1)
+  minLen = min([len(data[d]) for d in data])
+  data = {d: rnd.sample(data[d], minLen) for d in data}
+
+  # Names.
+  names = []
+  for d in data:
+    # Make a name for this.
+    for w in reversed(os.path.split(d)):
+      if w:
+        names.append(w.replace('_', ' ').title())
+        break
+    else:
+      assert False, 'Couldn\'t find a name for the population'
+
+  # Get plot data.
+  means = []
+  errors = []
+  for d in data:
+    mean = np.mean(data[d])
+    error = np.std(data[d]) / np.sqrt(len(data[d]))
+
+    print("{}: MEAN={}, ERR={}".format(d, mean, error))
+
+    means.append(mean)
+    errors.append(error)
+
+
+  # Get plot.
+  #fig = plt.figure(figsize=(5, 2.5))
+  fig = plt.figure()
+  ax = fig.add_subplot(1, 1, 1)
+
+  # Error plot.
+  sns.set(style="ticks")
+  ax.errorbar(names, means, errors, linestyle='None', marker='o')
+
+  # Plot setup.
+  #ax.set_yticklabels(names)
+  ax.set_xlabel('Population Age (ticks)', labelpad=10)
+  ax.set_xticklabels(names, rotation=90)
+
   # Figure setup.
   fig.tight_layout()
   fig.savefig(filename + '.pdf', bbox_inches='tight')

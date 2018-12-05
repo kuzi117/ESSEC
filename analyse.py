@@ -40,6 +40,7 @@ def manyFiles():
 
   am.plotPopulationStatistics(dirs)
   am.plotPopulationDeclines(dirs)
+  am.plotMeans(dirs)
 
   plt.show()
 
