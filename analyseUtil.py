@@ -9,6 +9,7 @@ if __name__ == '__main__':
 import os
 import random
 import colorsys
+import numpy as np
 
 def createColor():
   r, g, b = colorsys.hsv_to_rgb(random.random(), 1, 1)
@@ -73,6 +74,9 @@ def extractFamily(agentId, data, includeChildren):
         pass # Do nothing for top level agents
       else:
         children[partner][1].add(a)
+
+    lens = [len(children[a][0]) + len(children[a][1]) for a in children]
+    print('AVERAGE BRANCHING:', np.mean(lens))
 
     # We start by looking at children for which this agent was the parent for.
     toSee = children[agentId][0].copy()
