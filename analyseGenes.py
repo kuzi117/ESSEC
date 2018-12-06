@@ -25,9 +25,10 @@ genomeSize = len(genomeWeightNames)
 def getLastData(files):
   # Extract last agent data from files.
   data = []
+  print('Loading...')
   for i, path in enumerate(files):
     if i % 100 == 0:
-      print(i, end=' ')
+      print(i)
     with open(path, 'rb') as f:
       # Apparently some files didn't finish dumping.
       try:
@@ -52,16 +53,18 @@ def getLastData(files):
 
 def rankMaxPreference(data):
   counts = np.zeros((genomeSize, ), dtype=np.int32)
-  
-  print(len(data))
-  for d in data:
+
+  print('Calculating max preferences...')
+  for i, d in enumerate(data):
+    if i % 100 == 0:
+      print(i)
+
     prof = d['profile_net'].flat
     prof = np.abs(prof)
     inds = np.argsort(-prof) # Make all values negative in the arg sort for reverse order
-    
+
     counts[inds[0] // profileSize] += 1
 
-  print(counts)
   cInds = np.argsort(-counts)
   for i, w in enumerate(cInds[:10]):
     print('Rank: {}, Name: {}, Count: {}'.format(i, genomeWeightNames[w], counts[w]))
