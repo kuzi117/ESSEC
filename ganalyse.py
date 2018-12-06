@@ -23,5 +23,7 @@ if __name__ == '__main__':
   print('Found {} files to analyse.'.format(len(files)))
 
   data = ag.getLastData(files)
+  print('After loading, {} files were left.'.format(len(data)))
 
-  ag.rankMaxPreference(data)
+  #ag.rankMaxProfile(data)
+  ag.rankMaxPrefInput(data)

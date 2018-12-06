@@ -19,6 +19,8 @@ profileWeightNames = tuple('({})TO{}'.format(w, o)
 # Profile input info.
 genomeSize = len(genomeWeightNames)
 
+#print(np.array(profileWeightNames).reshape((60, 30))[:, 10])
+
 #for i in range(len(profileWeightNames)):
 #  assert genomeWeightNames[i // profileSize] in profileWeightNames[i]
 
@@ -51,10 +53,34 @@ def getLastData(files):
       
   return data
 
-def rankMaxPreference(data):
+def rankMaxPrefInput(data):
   counts = np.zeros((genomeSize, ), dtype=np.int32)
 
-  print('Calculating max preferences...')
+  print('Calculating max preference input')
+  for i, d in enumerate(data):
+    if i % 100 == 0:
+      print(i)
+
+    # Maximally weighted pref node.
+    pref = d['preference_net']
+    maxProfNode = np.argmax(pref.flat)
+
+    # Maximally waited genome input to that pref node.
+    prof = d['profile_net']
+    miniProf = prof[:, maxProfNode]
+    maxInputNode = np.argmax(miniProf)
+
+    # Count which input weight was maximally affecting preference.
+    counts[maxInputNode] += 1
+
+  cInds = np.argsort(-counts)
+  for i, w in enumerate(cInds[:10]):
+    print('Rank: {}, Name: {}, Count: {}'.format(i, genomeWeightNames[w], counts[w]))
+
+def rankMaxProfile(data):
+  counts = np.zeros((genomeSize, ), dtype=np.int32)
+
+  print('Calculating max profile inputs...')
   for i, d in enumerate(data):
     if i % 100 == 0:
       print(i)
@@ -69,7 +95,7 @@ def rankMaxPreference(data):
   for i, w in enumerate(cInds[:10]):
     print('Rank: {}, Name: {}, Count: {}'.format(i, genomeWeightNames[w], counts[w]))
 
-def rankAllPreferences(data):
+def rankAllProfile(data):
   # First index is a weight, second index is the number of times that it appeared in that
   # place in the sorted absolute weights.
   n = len(profileWeightNames)
