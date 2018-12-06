@@ -42,6 +42,24 @@ def manyFiles():
   am.plotPopulationDeclines(dirs)
   am.plotMeans(dirs)
 
+  
+  seen = set()
+  for d1 in dirs:
+    # Filter.
+    #if 'profiling' not in d1:
+    #  continue
+
+    for d2 in dirs:
+      if d1 == d2:
+        continue
+
+      pair = tuple(sorted((d1, d2)))
+      if pair in seen:
+        continue
+
+      seen.add(pair)
+      am.performTTest(d1, d2)
+
   plt.show()
 
 if __name__ == '__main__':

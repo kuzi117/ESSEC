@@ -12,6 +12,7 @@ import os
 import random
 import pickle
 import numpy as np
+import scipy
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -230,13 +231,13 @@ def plotMeans(dirs, filename=None):
   errors = []
   for d in data:
     mean = np.mean(data[d])
-    error = np.std(data[d]) / np.sqrt(len(data[d]))
+    std = np.std(data[d])
+    error = std / np.sqrt(len(data[d]))
 
-    print("{}: MEAN={}, ERR={}".format(d, mean, error))
+    print("{}: N={}, MEAN={}, STD={}, ERR={}".format(d, len(data[d]), mean, std, error))
 
     means.append(mean)
     errors.append(error)
-
 
   # Get plot.
   #fig = plt.figure(figsize=(5, 2.5))
@@ -255,3 +256,49 @@ def plotMeans(dirs, filename=None):
   # Figure setup.
   fig.tight_layout()
   fig.savefig(filename + '.pdf', bbox_inches='tight')
+
+def performTTest(dirA, dirB):
+  '''
+  Performs a TTest to see if two population mean survival times are significantly different.
+  '''
+
+  # Get files.
+  files = {}
+  for d in (dirA, dirB):
+    # Skip non-directories.
+    if not os.path.isdir(d):
+      continue
+
+    # Save files for dir.
+    files[d] = util.gatherPcks(d)
+
+  # Get data.
+  data = {}
+  for d in files:
+    dirData = []
+    for path in files[d]:
+      with open(path, 'rb') as f:
+        eulogies = pickle.load(f)
+        agentId = util.pickLastAgent(eulogies)
+        dirData.append(eulogies[agentId][5])
+    data[d] = dirData
+
+  keys = data.keys()
+  names = []
+  for k in keys:
+    # Make a name for this.
+    for w in reversed(os.path.split(k)):
+      if w:
+        names.append(w.replace('_', ' ').title())
+        break
+    else:
+      assert False, 'Couldn\'t find a name for the population'
+
+  tData = []
+  for k in keys:
+    tData.append(data[k])
+
+  p = scipy.stats.ttest_ind(*tData)
+
+  print('{}, {}: {}'.format(*names, p))
+
