@@ -75,7 +75,7 @@ def rankMaxPrefInput(data):
 
   cInds = np.argsort(-counts)
   for i, w in enumerate(cInds[:10]):
-    print('Rank: {}, Name: {}, Count: {}'.format(i, genomeWeightNames[w], counts[w]))
+    print('Rank: {}, Name: {}, Count: {}, Index: {}'.format(i, genomeWeightNames[w], counts[w], w))
 
 def rankMaxProfile(data):
   counts = np.zeros((genomeSize, ), dtype=np.int32)
@@ -93,7 +93,7 @@ def rankMaxProfile(data):
 
   cInds = np.argsort(-counts)
   for i, w in enumerate(cInds[:10]):
-    print('Rank: {}, Name: {}, Count: {}'.format(i, genomeWeightNames[w], counts[w]))
+    print('Rank: {}, Name: {}, Count: {}, Index: {}'.format(i, genomeWeightNames[w], counts[w]))
 
 def rankAllProfile(data):
   # First index is a weight, second index is the number of times that it appeared in that
