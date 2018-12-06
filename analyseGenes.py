@@ -11,14 +11,23 @@ profileSize = 30
 # Produce name mappings for all of the weights.
 actionWeightNames = tuple('{}TO{}'.format(s, a) for s in stateNames for a in actionNames)
 valueWeightNames = tuple('{}TOval'.format(s) for s in stateNames)
+genomeWeightNames = tuple(itertools.chain(valueWeightNames, actionWeightNames))
 profileWeightNames = tuple('({})TO{}'.format(w, o)
-                           for w in itertools.chain(valueWeightNames, actionWeightNames)
+                           for w in genomeWeightNames
                            for o in range(profileSize))
+
+# Profile input info.
+genomeSize = len(genomeWeightNames)
+
+#for i in range(len(profileWeightNames)):
+#  assert genomeWeightNames[i // profileSize] in profileWeightNames[i]
 
 def getLastData(files):
   # Extract last agent data from files.
   data = []
-  for path in files:
+  for i, path in enumerate(files):
+    if i % 100 == 0:
+      print(i, end=' ')
     with open(path, 'rb') as f:
       # Apparently some files didn't finish dumping.
       try:
@@ -41,7 +50,23 @@ def getLastData(files):
       
   return data
 
-def rankPreferences(data):
+def rankMaxPreference(data):
+  counts = np.zeros((genomeSize, ), dtype=np.int32)
+  
+  print(len(data))
+  for d in data:
+    prof = d['profile_net'].flat
+    prof = np.abs(prof)
+    inds = np.argsort(-prof) # Make all values negative in the arg sort for reverse order
+    
+    counts[inds[0] // profileSize] += 1
+
+  print(counts)
+  cInds = np.argsort(-counts)
+  for i, w in enumerate(cInds[:10]):
+    print('Rank: {}, Name: {}, Count: {}'.format(i, genomeWeightNames[w], counts[w]))
+
+def rankAllPreferences(data):
   # First index is a weight, second index is the number of times that it appeared in that
   # place in the sorted absolute weights.
   n = len(profileWeightNames)

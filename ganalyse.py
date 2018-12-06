@@ -24,4 +24,4 @@ if __name__ == '__main__':
 
   data = ag.getLastData(files)
 
-  ag.rankPreferences(data)
+  ag.rankMaxPreference(data)
