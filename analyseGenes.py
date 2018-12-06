@@ -64,12 +64,13 @@ def rankMaxPrefInput(data):
 
     # Maximally weighted pref node.
     pref = d['preference_net']
+    pref = abs(pref)
     maxProfNode = np.argmax(pref.flat)
 
     # Maximally waited genome input to that pref node.
     prof = d['profile_net']
     miniProf = prof[:, maxProfNode]
-    maxInputNode = np.argmax(miniProf)
+    maxInputNode = np.argmax(abs(miniProf))
 
     # Count which input weight was maximally affecting preference.
     counts[maxInputNode] += 1
