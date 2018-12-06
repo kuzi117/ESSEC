@@ -55,6 +55,7 @@ def getLastData(files):
 
 def rankMaxPrefInput(data):
   counts = np.zeros((genomeSize, ), dtype=np.int32)
+  stats = np.zeros((genomeSize, 3), dtype=np.float32)
 
   print('Calculating max preference input')
   for i, d in enumerate(data):
@@ -73,9 +74,19 @@ def rankMaxPrefInput(data):
     # Count which input weight was maximally affecting preference.
     counts[maxInputNode] += 1
 
+    # Do some value tracking stacks.
+    val = miniProf[maxInputNode]
+    if val > 0:
+      stats[maxInputNode, 0] += 1
+    elif val < 0:
+      stats[maxInputNode, 1] += 1
+    else:
+      print('The value was zero?!')
+    stats[maxInputNode, 2] += (miniProf[maxInputNode] - stats[maxInputNode, 2]) / counts[maxInputNode]
+
   cInds = np.argsort(-counts)
   for i, w in enumerate(cInds[:10]):
-    print('Rank: {}, Name: {}, Count: {}, Index: {}'.format(i, genomeWeightNames[w], counts[w], w))
+    print('Rank: {}, Name: {}, Count: {}, Stats: {}'.format(i, genomeWeightNames[w], counts[w], (int(stats[w][0]), int(stats[w][1]), float(stats[w][2]))))
 
 def rankMaxProfile(data):
   counts = np.zeros((genomeSize, ), dtype=np.int32)
