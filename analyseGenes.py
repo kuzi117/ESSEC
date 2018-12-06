@@ -1,6 +1,7 @@
 import itertools
 import numpy as np
 import pickle
+import _pickle
 
 # Create names and info for producing mapping names.
 actionNames = ('move', 'right', 'left', 'mate', 'eat')
@@ -23,7 +24,9 @@ def getLastData(files):
       try:
         genes = pickle.load(f)
       except EOFError:
-        print('{} was malformed, skipping.'.format(path))
+        print('{} was malformed, skipping (eof).'.format(path))
+      except _pickle.UnpicklingError:
+        print('{} was malformed, skipping (unpickling error).'.format(path))
 
       # Get last agent.
       lastAgent = max(genes.keys())
